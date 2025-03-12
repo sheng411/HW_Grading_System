@@ -65,9 +65,8 @@ def rename_student_folders_in_root(student_root):
                     print(f"資料夾 '{folder}' 已符合格式，不做修改。")
             else:
                 print(f"資料夾 '{folder}' 中找不到符合格式的中文姓名及學號，跳過重新命名。")
-    return chinese_name
 #generate excel
-def generate_excel(student_root, check_excel,s_name):
+def generate_excel(student_root, check_excel):
     """
     生成一個 Excel 檔案 (StudentList.xlsx) 存放學生資料夾名稱與學號。
     Excel 的 A1 儲存格填入 "dir_name"，B1 填入 "S_id"，
@@ -108,9 +107,9 @@ def generate_excel(student_root, check_excel,s_name):
         if os.path.isdir(folder_path):
             # 假設新名稱格式為 "學號_中文姓名"，底線前為學號
             dir_name = folder
-            #parts = folder.split("_")
-            #s_id = parts[1] if parts else ""
-            s_id=s_name
+            parts = folder.split("_")
+            s_id = parts[0] if parts else ""
+            #s_id=s_name
 
             if s_id==error_student_folder:
                 continue
@@ -128,7 +127,7 @@ def generate_excel(student_root, check_excel,s_name):
 #move non cpp files
 def move_non_cpp_folders(hw_folder_path):
     check_count = 1
-    error_folder_path = os.path.join(hw_folder_path, "error_student_folder")
+    error_folder_path = os.path.join(hw_folder_path, error_student_folder)
 
     # 如果錯誤資料夾不存在，則建立它
     if not os.path.exists(error_folder_path):
@@ -218,6 +217,7 @@ def process_student_folder(folder, num_programs,test_num_i):
         with open(input_file, "r") as f:
             #lines = f.readlines()
             lines = [line.rstrip() for line in f if line.strip() != ""]
+        f.close()
 
         
         for line in lines:
@@ -249,22 +249,27 @@ def process_student_folder(folder, num_programs,test_num_i):
             
             with open(test_input_file, "w") as tif:
                 tif.write(test_data)
+            tif.close()
 
             # 使用 testinput.txt 作為標準輸入來執行編譯後的程式
             with open(test_input_file, "r") as tif:
-                run_result = subprocess.run(exe_path,stdin=tif,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+                run_result = subprocess.run(exe_path,stdin=tif,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,encoding="utf-8",errors="replace")
+            tif.close()
                 
             output=run_result.stdout
+            #print(repr(output))
             if not output.endswith("\n"):
                 output += "\n"
+            #print(repr(output))
             
             # 結果寫入
             with open(output_file, "a") as outf:
-                outf.write(run_result.stdout)
+                outf.write(output)            
 
             # clear testinput.txt
             with open(test_input_file, "w") as tif:
                 tif.write("")
+            tif.close()
 #比對答案
 def comparison_student_data(folder, num_problems, high_num_problems):
     """
@@ -287,20 +292,29 @@ def comparison_student_data(folder, num_problems, high_num_problems):
         if not os.path.exists(output_file):
             print(f"找不到 {i}output.txt")
             results.append("X")
-            error_count += 1
+            if i >= high_start:
+                high_error_count += 1
+            else:
+                error_count += 1
             wrong_questions.append(i)
             continue
         if not os.path.exists(ans_file):
             print(f"找不到答案檔 {i}ans.txt，題號 {i}")
             results.append("?")
-            error_count += 1
+            if i >= high_start:
+                high_error_count += 1
+            else:
+                error_count += 1
             wrong_questions.append(i)
             continue
 
-        with open(output_file, "r", encoding="utf-8") as f_out:
+        with open(output_file, "r", encoding="utf-8", errors="replace") as f_out:
             student_output = f_out.read().strip()
+        f_out.close()
+
         with open(ans_file, "r", encoding="utf-8") as f_ans:
             correct_output = f_ans.read().strip()
+        f_ans.close()
 
         if student_output == correct_output:
             results.append("O")
@@ -460,7 +474,7 @@ def main():
     #print("base_dir: ",base_dir)
     #print("student_root: ",student_root)
     
-    s_name=rename_student_folders_in_root(student_root)
+    rename_student_folders_in_root(student_root)
 
     if os.path.exists(excel_file):
         print(f"{excel_file} is True")
@@ -470,7 +484,7 @@ def main():
         check_excel = 0
     
     # 生成 Excel 學生清單
-    generate_excel(student_root,check_excel,s_name)
+    generate_excel(student_root,check_excel)
 
     print("\n\n--------------- CHECK .cpp FILE ---------------")
 
@@ -481,30 +495,31 @@ def main():
     num=0
     items = [os.path.join(student_root, d) for d in os.listdir(student_root) if os.path.isdir(os.path.join(student_root, d))]
     total_file_path = os.path.join(base_dir, total_file_name)
-    for item in items:
-        #print("item: ",item)
-        if os.path.isdir(item):
-            if os.path.basename(item) == error_student_folder:
-                #print(f"跳過 {item}，因為資料夾名稱為 {error_student_folder}")
-                continue
-            num+=1
-            print(f"\n\n{num}.處理資料夾：{os.path.basename(item)}_{s_name}")
-            process_student_folder(item, num_problems,test_num_i)
+    with open(total_file_path, "w", encoding="utf-8") as total_file:
+        for item in items:
+            #print("item: ",item)
+            if os.path.isdir(item):
+                if os.path.basename(item) == error_student_folder:
+                    #print(f"跳過 {item}，因為資料夾名稱為 {error_student_folder}")
+                    continue
+                num+=1
+                print(f"\n\n{num}.處理資料夾：{os.path.basename(item)}")
+                process_student_folder(item, num_problems,test_num_i)
 
-            student = os.path.basename(item)
-            #print(f"{num}. 學生 {student}")
-            results, error_count, high_error_count, wrong_questions = comparison_student_data(item, num_problems, high_num_problems)
-            #print("wrong_questions: ",wrong_questions)
-            write_errors_to_excel(student, wrong_questions)
-            result_str = " ".join(results)
-            line = f"{student}_{s_name}----- {result_str} -----基本題錯 {error_count} 題 進階題錯 {high_error_count} 題\n"
-            #學生/總題數/高分題數/基本錯題/基本配分/高分錯題/高分配分
-            add_excel(student,num_problems, high_num_problems,error_count,score_ballast, high_error_count,high_score_ballast)
-                
-            with open(total_file_path, "w", encoding="utf-8") as total_file:
+                student = os.path.basename(item)
+                #print(f"{num}. 學生 {student}")
+                results, error_count, high_error_count, wrong_questions = comparison_student_data(item, num_problems, high_num_problems)
+                #print("wrong_questions: ",wrong_questions)
+                write_errors_to_excel(student, wrong_questions)
+                result_str = " ".join(results)
+                line = f"{student}----- {result_str} -----基本題錯 {error_count} 題 進階題錯 {high_error_count} 題\n"
+                #學生/總題數/高分題數/基本錯題/基本配分/高分錯題/高分配分
+                add_excel(student,num_problems, high_num_problems,error_count,score_ballast, high_error_count,high_score_ballast)
+
                 total_file.write(line)
                 print(f"結果: {line.strip()}\n\n")
-            #
+    total_file.close()
+
             
     print("\n\n--------------- END INSPECTION ---------------\n")
     
