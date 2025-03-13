@@ -1,0 +1,30 @@
+# HW Grading system
+## 流程
+- 輸入相關參數  
+  - 檢測程式數
+  - 基本題配分
+  - 困難題數量
+  - 困難題配分
+  - 每次測試資料行數
+  - 作業編號(EXCEL命名用，e.g. Score_{number}.xlsx)
+- find_student_root()
+  - 搜尋目錄下的學生資料夾  
+- rename_student_folders_in_root()
+  - 進行重新命名 
+- generate_excel()
+  - 判斷是否有EXCEL檔案  
+  - 判斷檔案內是否有學生學號等資料，若沒有則寫入EXCEL  
+- move_non_cpp_folders()
+  - 判斷資料夾內是否有非允許的檔案，若有則移入0Error資料夾中  
+- process_student_folder()  
+  - 將檔案(.cpp)編譯並進行測資  
+  - 將程式所輸出的測資寫入output.txt  
+- comparison_student_data()
+  - 比對學生輸出和標準輸出  
+  - 將結果寫入EXCEL和total.txt中  
+- write_errors_to_excel()
+  - 將錯誤資訊寫入EXCEL中E欄位(第 X 題錯誤...等)
+- add_excel()
+  - 寫入 錯誤題數、分數
+- format_excel()
+  - 調整EXCEL字體大小和格式
