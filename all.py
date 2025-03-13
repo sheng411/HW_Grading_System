@@ -459,7 +459,7 @@ def main():
     score_ballast = int(input("基本題配分: "))
     high_num_problems = int(input("困難題目數量: "))
     high_score_ballast = int(input("困難題目配分: "))
-    test_num_i = int(input("每次測試資料行數(預設為1): "))
+    test_num_i = int(input("每次測試資料行數(預設為1): ") or 1)
     
 
     selection=input("作業編號(eg.02261): ")
