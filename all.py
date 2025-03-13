@@ -11,6 +11,7 @@ compile_path = r"C:\msys64\mingw64\bin\g++.exe"
 test_input_file = "testinput.txt"
 total_file_name = "total.txt"
 error_student_folder = "0Error"
+file_extension='.cpp'
 
 '''
 test input file name: 1input.txt, 2input.txt, ...
@@ -18,6 +19,7 @@ answer file name: 1ans.txt, 2ans.txt, ...
 testinput.txt: 暫存每次測試的輸入
 total.txt: 統計學生的答題狀況
 Score_{作業日期}.xlsx: 紀錄該次作業狀況
+file_extension: 檔案副檔名
 
 '''
 
@@ -149,7 +151,7 @@ def move_non_cpp_folders(hw_folder_path):
                 file_path = os.path.join(student_folder_path, file)
 
                 # 檢查是否為檔案，且副檔名不是 .cpp
-                if os.path.isfile(file_path) and not file.endswith('.cpp'):
+                if os.path.isfile(file_path) and not file.lower().endswith(file_extension):
                     has_non_cpp = True
                     break  # 找到非 .cpp 檔案就可提前結束該資料夾的搜尋
 
