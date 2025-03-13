@@ -42,31 +42,6 @@ def find_student_root(base_dir):
                 max_count = len(subdirs)
                 candidate = folder_path
         return candidate
-#rename student folders
-def rename_student_folders_in_root(student_root):
-    for folder in os.listdir(student_root):
-        folder_path = os.path.join(student_root, folder)
-        if os.path.isdir(folder_path):
-            # 修改正則表達式以捕獲中文姓名與學號
-            m = re.search(r'^([\u4e00-\u9fff]+).*?(\d{8,9}[A-Za-z])(?=_|$)', folder)
-            #print("m: ",m)
-            if m:
-                chinese_name = m.group(1)
-                student_id = m.group(2)
-                #new_name = f"{chinese_name}_{student_id}"
-                #new_name = f"{student_id}_{chinese_name}"
-                new_name = f"{student_id}"
-                new_path = os.path.join(student_root, new_name)
-                if folder != new_name:
-                    if os.path.exists(new_path):
-                        print(f"新名稱 '{new_name}' 已存在，無法重新命名 '{folder}'")
-                    else:
-                        print(f"將資料夾 '{folder}' 重新命名為 '{new_name}'")
-                        os.rename(folder_path, new_path)
-                else:
-                    print(f"資料夾 '{folder}' 已符合格式，不做修改。")
-            else:
-                print(f"資料夾 '{folder}' 中找不到符合格式的中文姓名及學號，跳過重新命名。")
 #generate excel
 def generate_excel(student_root, check_excel):
     """
@@ -102,26 +77,79 @@ def generate_excel(student_root, check_excel):
         existing_sids = set()
         row = 2
         print(f"建立新的 {excel_file} 檔案")
-
-
+    wb.save(excel_file)
+    print(f"Excel 檔案已儲存：{excel_file}")
+#rename student folders and update excel
+def student_folder_name_excel(student_root,check_excel):
+    wb = load_workbook(excel_file)
+    ws = wb.active  # 假設處理第一個工作表
+    row = 2
     for folder in os.listdir(student_root):
         folder_path = os.path.join(student_root, folder)
         if os.path.isdir(folder_path):
-            # 假設新名稱格式為 "學號_中文姓名"，底線前為學號
-            dir_name = folder
-            parts = folder.split("_")
-            s_id = parts[0] if parts else ""
-            #s_id=s_name
+            # 修改正則表達式以捕獲中文姓名與學號
+            m = re.search(r'^([\u4e00-\u9fff]+).*?(\d{8,9}[A-Za-z])(?=_|$)', folder)
+            #print("m: ",m)
+            if m:
+                chinese_name = m.group(1)
+                student_id = m.group(2)
+                #new_name = f"{chinese_name}_{student_id}"
+                #new_name = f"{student_id}_{chinese_name}"
+                new_name = f"{student_id}"
+                new_path = os.path.join(student_root, new_name)
+                if folder != new_name:
+                    if os.path.exists(new_path):
+                        print(f"新名稱 '{new_name}' 已存在，無法重新命名 '{folder}'")
+                    else:
+                        print(f"將資料夾 '{folder}' 重新命名為 '{new_name}'")
+                        os.rename(folder_path, new_path)
+                else:
+                    print(f"資料夾 '{folder}' 已符合格式，不做修改。")
+            else:
+                print(f"資料夾 '{folder}' 中找不到符合格式的中文姓名及學號，跳過重新命名。")
+            
+            
+            if not check_excel:
+                # 收集現有的 S_id（B 欄）到一個 set
+                existing_sids = set()
+                # 假設新名稱格式為 "學號_中文姓名"，底線前為學號
+                '''
+                dir_name = folder
+                parts = folder.split("_")
+                s_id = parts[0] if parts else ""
+                '''
+                s_id=chinese_name
 
-            if s_id==error_student_folder:
-                continue
-            # 若該學號不在 Excel 紀錄中，則插入新資料
-            elif s_id and s_id not in existing_sids:
-                ws.cell(row=row, column=1, value=dir_name)  # A 欄：dir_name
-                ws.cell(row=row, column=2, value=s_id)      # B 欄：S_id
-                row += 1
-                existing_sids.add(s_id)
+                if s_id==error_student_folder:
+                    continue
+                # 若該學號不在 Excel 紀錄中，則插入新資料
+                elif s_id and s_id not in existing_sids:
+                    ws.cell(row=row, column=1, value=student_id)  # A 欄：dir_name
+                    ws.cell(row=row, column=2, value=s_id)      # B 欄：S_id
+                    row += 1
+                    existing_sids.add(s_id)
+    if not check_excel:
+        # 1. 讀取從第 2 列開始的所有資料（含多欄）
+        rows_data = []
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            # row 會是一個 tuple，包含該列所有欄位的值
+            rows_data.append(row)
 
+        # 2. 依照 A 欄（即 row[0]）進行排序
+        #    假設 A 欄存放的是字串，如 "11303114A" 等
+        rows_data.sort(key=lambda x: x[0])
+
+        # 3. 清除原先從第 2 列開始的內容
+        max_row = ws.max_row
+        max_col = ws.max_column
+        for r in range(2, max_row + 1):
+            for c in range(1, max_col + 1):
+                ws.cell(row=r, column=c, value=None)
+
+        # 4. 寫回排序後的資料到第 2 列起
+        for i, row_tuple in enumerate(rows_data, start=2):
+            for j, cell_value in enumerate(row_tuple, start=1):
+                ws.cell(row=i, column=j, value=cell_value)
     wb.save(excel_file)
     print(f"Excel 檔案已儲存：{excel_file}")
 
@@ -255,7 +283,7 @@ def process_student_folder(folder, num_programs,test_num_i):
 
             # 使用 testinput.txt 作為標準輸入來執行編譯後的程式
             with open(test_input_file, "r") as tif:
-                run_result = subprocess.run(exe_path,stdin=tif,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,encoding="utf-8",errors="replace")
+                run_result = subprocess.run(exe_path,stdin=tif,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,encoding="utf-8",errors="ignore")    #replace errors="ignore"
             tif.close()
                 
             output=run_result.stdout
@@ -265,8 +293,8 @@ def process_student_folder(folder, num_programs,test_num_i):
             #print(repr(output))
             
             # 結果寫入
-            with open(output_file, "a") as outf:
-                outf.write(output)            
+            with open(output_file, "a", errors="ignore") as outf:
+                outf.write(output)
 
             # clear testinput.txt
             with open(test_input_file, "w") as tif:
@@ -310,7 +338,7 @@ def comparison_student_data(folder, num_problems, high_num_problems):
             wrong_questions.append(i)
             continue
 
-        with open(output_file, "r", encoding="utf-8", errors="replace") as f_out:
+        with open(output_file, "r", encoding="utf-8", errors="ignore") as f_out:   #replace errors="replace"
             student_output = f_out.read().strip()
         f_out.close()
 
@@ -466,6 +494,13 @@ def main():
 
     selection=input("作業編號(eg.02261): ")
     excel_file = f"Score_{selection}.xlsx"
+    if os.path.exists(excel_file):
+        print(f"{excel_file} is True")
+        check_excel = 1
+    else:
+        print(f"{excel_file} is False")
+        check_excel = 0
+
     
     print("\n\n--------------- START INSPECION ---------------")
     start = time.perf_counter()
@@ -476,17 +511,14 @@ def main():
     #print("base_dir: ",base_dir)
     #print("student_root: ",student_root)
     
-    rename_student_folders_in_root(student_root)
-
-    if os.path.exists(excel_file):
-        print(f"{excel_file} is True")
-        check_excel = 1
-    else:
-        print(f"{excel_file} is False")
-        check_excel = 0
+    # 重新命名學生資料夾
+    #rename_student_folders_in_root(student_root)
     
     # 生成 Excel 學生清單
     generate_excel(student_root,check_excel)
+
+    #重新命名學生資料夾並寫入Excel
+    student_folder_name_excel(student_root,check_excel)
 
     print("\n\n--------------- CHECK .cpp FILE ---------------")
 
@@ -497,7 +529,7 @@ def main():
     num=0
     items = [os.path.join(student_root, d) for d in os.listdir(student_root) if os.path.isdir(os.path.join(student_root, d))]
     total_file_path = os.path.join(base_dir, total_file_name)
-    with open(total_file_path, "w", encoding="utf-8") as total_file:
+    with open(total_file_path, "a", encoding="utf-8") as total_file:
         for item in items:
             #print("item: ",item)
             if os.path.isdir(item):
