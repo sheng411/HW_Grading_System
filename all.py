@@ -12,6 +12,8 @@ test_input_file = "testinput.txt"
 total_file_name = "total.txt"
 error_student_folder = "0Error"
 file_extension='.cpp'
+max_retries = 5  # 最多重試次數
+retry_delay = 1  # 每次重試間隔秒數
 
 '''
 test input file name: 1input.txt, 2input.txt, ...
@@ -293,13 +295,24 @@ def process_student_folder(folder, num_programs,test_num_i):
             #print(repr(output))
             
             # 結果寫入
-            with open(output_file, "a", errors="ignore") as outf:
-                outf.write(output)
+            retries = 0
+            while retries < max_retries:
+                try:
+                    with open(output_file, "a",errors="ignore") as outf:
+                        outf.write(output)
+                    break
+                except PermissionError as e:
+                    retries += 1
+                    print(f"PermissionError 正在重試 {retries}/{max_retries} ...")
+                    time.sleep(retry_delay)
+            else:
+                # 如果重試次數用完，依需求決定要怎麼處理，例如記錄錯誤或跳過
+                print(f"無法寫入檔案 {output_file}，請確認檔案是否被其他程式使用。")
 
             # clear testinput.txt
             with open(test_input_file, "w") as tif:
                 tif.write("")
-            tif.close()
+
 #比對答案
 def comparison_student_data(folder, num_problems, high_num_problems):
     """
@@ -427,7 +440,7 @@ def add_excel(student, total_problems, high_num_problems, error_count,score_ball
         print(f"Score: (({base_num_problems} - {error_count})*{score_ballast})+(({high_num_problems} - {high_error_count})*{high_score_ballast})={final_score}")
         # D 欄 (column=4) 寫入總題數 - 錯題數
         ws.cell(found_row, 4).value = final_score
-        print(f"\n已更新 {student} 的錯誤題數 = {error_count}，分數 = {final_score}")
+        print(f"已更新 {student} 的錯誤題數 = {error_count}，分數 = {final_score}")
     else:
         print(f"未在 Excel 中找到 {student}，無法更新。")
 
@@ -480,6 +493,9 @@ def format_excel(excel_file):
 
 def main():
     global excel_file
+
+    print(f"寫入重試次數: {max_retries}\n每次等待時間(s): {retry_delay}\n\n")
+
     # 詢問使用者本次要執行幾個程式
     try:
         num_problems = int(input("檢測程式數量? "))
@@ -563,7 +579,7 @@ def main():
 
     end = time.perf_counter()
     print(f"\n\n執行時間: {end - start:.2f} 秒")
-    print(f"平均每位同學處裡時間: {(end - start)/num:.2f} 秒\n\n")
+    print(f"每位學生平均處裡時間: {(end - start)/num:.2f} 秒\n\n")
 
 if __name__ == "__main__":
     main()
