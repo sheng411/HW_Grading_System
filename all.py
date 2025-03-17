@@ -252,32 +252,19 @@ def process_student_folder(folder, num_programs,test_num_i):
         f.close()
 
         
+        '''
         for line in lines:
             test_data = line.strip()
             if test_data == "":
                 continue  # 忽略空行
-            '''
+        '''
 
-        # 測資並寫入
-        #test_num_i = 0
-        while test_num_i < len(lines):
-            try:
-                # 讀取測資區塊第一行，代表後續的資料行數
-                count = int(lines[test_num_i])
-            except ValueError:
-                print(f"無法轉換成整數，測資格式錯誤：{lines[test_num_i]}")
-                break
-
-            # 檢查是否有足夠的行數：header行 + count 行
-            if test_num_i + 1 + count > len(lines):
-                print("測資區塊不完整。")
-                break
-        
-            # 取得本次測資區塊所有行（包含第一行）
-            test_case_lines = lines[test_num_i : test_num_i + 1 + count]
-            # 組合成一個字串，並於最後補上換行符號
+       # 以 test_num_i 為單位分組，每次取 test_num_i 行
+        for i in range(0, len(lines), test_num_i):
+            # 取出當前測試案例的所有行
+            test_case_lines = lines[i:i + test_num_i]
+            # 組合成一個字串，並補上換行符號
             test_data = "\n".join(test_case_lines) + "\n"
-            '''
             
             with open(test_input_file, "w") as tif:
                 tif.write(test_data)
