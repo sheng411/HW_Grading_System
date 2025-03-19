@@ -1,21 +1,26 @@
 # HW Grading system
 ## 流程
 - 輸入相關參數  
+  - 是否進行解壓縮
   - 檢測程式數
   - 基本題配分
   - 困難題數量
   - 困難題配分
   - 每次測試資料行數
   - 作業編號(EXCEL命名用，e.g. Score_{number}.xlsx)
+- unzip_file()
+  - 進行解壓縮  
 - find_student_root()
   - 搜尋目錄下的學生資料夾  
-- rename_student_folders_in_root()
-  - 進行重新命名 
 - generate_excel()
   - 判斷是否有EXCEL檔案  
   - 判斷檔案內是否有學生學號等資料，若沒有則寫入EXCEL  
+- student_folder_name_excel()
+  - 重新命名學生資料夾並寫入Excel  
 - move_non_cpp_folders()
   - 判斷資料夾內是否有非允許的檔案，若有則移入0Error資料夾中  
+- check_test_files()
+  - 判斷是否有測試資料，無則新增一個並跳出程式  
 - process_student_folder()  
   - 將檔案(.cpp)編譯並進行測資  
   - 將程式所輸出的測資寫入output.txt  
