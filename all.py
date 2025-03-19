@@ -2,7 +2,9 @@ import os
 import re
 import subprocess
 import time
+import zipfile
 import shutil
+from datetime import datetime
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font
 from openpyxl.utils import get_column_letter
@@ -12,10 +14,11 @@ test_input_file = "testinput.txt"
 total_file_name = "total.txt"
 error_student_folder = "0Error"
 file_extension='.cpp'
-max_retries = 5  # 最多重試次數
+max_retries = 3  # 最多重試次數
 retry_delay = 1  # 每次重試間隔秒數
-test_timeout=20
+test_timeout= 10
 test_file_dir = "test_file"
+hw_dir= "HW_folder"
 
 '''
 test input file name: 1input.txt, 2input.txt, ...
@@ -25,8 +28,28 @@ total.txt: 統計學生的答題狀況
 Score_{作業日期}.xlsx: 紀錄該次作業狀況
 file_extension: 檔案副檔名
 test_file_dir: 測試檔案資料夾
+hw_dir: 作業資料夾
+
 '''
 
+
+#解壓縮(.zip)
+def unzip_file(base_dir):
+    hw_folder = os.path.join(base_dir, hw_dir)
+    files = os.listdir(hw_folder)
+
+    zip_files = [f for f in files if f.lower().endswith(".zip")]
+
+    if len(zip_files) == 1:
+        zip_path = os.path.join(hw_folder, zip_files[0])
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(hw_folder)
+        os.remove(zip_path)
+        print(f"已解壓縮 {zip_files[0]} 並刪除原壓縮檔")
+    elif len(zip_files) == 0:
+        print(f"錯誤：{hw_folder} 內沒有找到壓縮檔")
+    else:
+        print(f"錯誤：{hw_folder} 內有多個壓縮檔，請手動確認")
 
 #find student root
 def find_student_root(base_dir):
@@ -488,6 +511,7 @@ def main():
     print(f"寫入重試次數: {max_retries}\n每次等待時間(s): {retry_delay}\n每個程式最大執行時間(s): {test_timeout}\n")
 
     # 詢問使用者本次要執行幾個程式
+    unzip= int(input("是否解壓縮檔案(預設為1): ") or 1)
     try:
         num_problems = int(input("檢測程式數量? "))
     except ValueError:
@@ -500,6 +524,16 @@ def main():
     
 
     selection=input("作業編號(eg.02261): ")
+    
+    
+    print("\n\n--------------- START INSPECION ---------------")
+    start = time.perf_counter()
+
+    #解壓縮
+    if unzip:
+        unzip_file(os.getcwd())
+
+    #檢查是否有Excel檔案
     excel_file = f"Score_{selection}.xlsx"
     if os.path.exists(excel_file):
         print(f"{excel_file} is True")
@@ -507,10 +541,6 @@ def main():
     else:
         print(f"{excel_file} is False")
         check_excel = 0
-
-    
-    print("\n\n--------------- START INSPECION ---------------")
-    start = time.perf_counter()
 
     #rename
     base_dir = os.getcwd()      #當前目錄
@@ -569,8 +599,20 @@ def main():
     format_excel(excel_file)
 
     end = time.perf_counter()
-    print(f"\n\n執行時間: {end - start:.2f} 秒")
-    print(f"每位學生平均處裡時間: {(end - start)/num:.2f} 秒\n\n")
+    execuition_time = f"執行時間: {end - start:.2f} 秒"
+    average_time = f"每位學生平均處裡時間: {(end - start)/num:.2f} 秒"
+    now = datetime.now()
+    formatted_time = now.strftime("%Y/%m/%d %H:%M:%S")
+
+    with open(total_file_path, "a", encoding="utf-8") as total_file:
+        total_file.write(f"{execuition_time}\n")
+        total_file.write(f"{average_time}\n")
+        total_file.write(f"{formatted_time}\n")
+    total_file.close()
+
+    print(f"\n\n{execuition_time}")
+    print(f"{average_time}\n")
+    print(f"{formatted_time}\n")
 
 if __name__ == "__main__":
     main()
