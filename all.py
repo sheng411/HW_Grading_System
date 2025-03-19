@@ -33,6 +33,29 @@ hw_dir: 作業資料夾
 '''
 
 
+#檢查測試檔案是否存在
+def check_test_files(num_programs):
+    if not os.path.exists(test_file_dir):
+        print("未找到測試程式，正在建立 test_file 資料夾...")
+        os.makedirs(test_file_dir)  # 建立資料夾
+        print("test_file 資料夾已建立。")
+        return True
+    else:
+        print("test_file 資料夾已存在，繼續執行程式。")
+
+    for i in range(1, num_programs + 1):
+        input_filename = f"{i}input.txt"
+        ans_filename = f"{i}ans.txt"
+        input_file_path = os.path.join(test_file_dir, input_filename)
+        ans_file_path = os.path.join(test_file_dir, ans_filename)
+        if not os.path.isfile(input_file_path):
+            print(f"找不到測試檔 {input_filename}，請檢查。")
+            return True
+        if not os.path.isfile(ans_file_path):
+            print(f"找不到答案檔 {ans_filename}，請檢查。")
+            return True
+    return False
+
 #解壓縮(.zip)
 def unzip_file(base_dir):
     hw_folder = os.path.join(base_dir, hw_dir)
@@ -545,12 +568,7 @@ def main():
     #rename
     base_dir = os.getcwd()      #當前目錄
     student_root = find_student_root(base_dir)  #學生資料夾目錄
-    #print("base_dir: ",base_dir)
-    #print("student_root: ",student_root)
-    
-    # 重新命名學生資料夾
-    #rename_student_folders_in_root(student_root)
-    
+        
     # 生成 Excel 學生清單
     generate_excel(student_root,check_excel)
 
@@ -562,6 +580,10 @@ def main():
     #check non cpp files
     move_non_cpp_folders(student_root)
     print("\n\n--------------- TESTING ---------------")
+
+    ctf=check_test_files(num_problems)
+    if ctf:
+        return
 
     num=0
     items = [os.path.join(student_root, d) for d in os.listdir(student_root) if os.path.isdir(os.path.join(student_root, d))]
