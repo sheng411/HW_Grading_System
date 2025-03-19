@@ -14,6 +14,8 @@ error_student_folder = "0Error"
 file_extension='.cpp'
 max_retries = 5  # 最多重試次數
 retry_delay = 1  # 每次重試間隔秒數
+test_timeout=20
+test_file_dir = "test_file"
 
 '''
 test input file name: 1input.txt, 2input.txt, ...
@@ -22,7 +24,7 @@ testinput.txt: 暫存每次測試的輸入
 total.txt: 統計學生的答題狀況
 Score_{作業日期}.xlsx: 紀錄該次作業狀況
 file_extension: 檔案副檔名
-
+test_file_dir: 測試檔案資料夾
 '''
 
 
@@ -200,10 +202,11 @@ def move_non_cpp_folders(hw_folder_path):
 
 
 #compile and test
-def process_student_folder(folder, num_programs,test_num_i):
+def process_student_folder(folder, num_programs,test_num_i,base_dir):
     for i in range(1, num_programs + 1):
         cpp_filename = f"{i}.cpp"
         cpp_path = os.path.join(folder, cpp_filename)
+        test_file_path = os.path.join(base_dir, test_file_dir)
 
 
         #if os.path.basename(folder) == error_student_folder:
@@ -230,7 +233,7 @@ def process_student_folder(folder, num_programs,test_num_i):
 
         # 設定測試檔案：
         input_filename = f"{i}input.txt"
-        input_file = input_filename
+        input_file_path = os.path.join(test_file_path, input_filename)
         #test_input_file = "testinput.txt"
 
         # 輸出結果
@@ -241,12 +244,12 @@ def process_student_folder(folder, num_programs,test_num_i):
         with open(output_file, "w") as outf:
             outf.write("")
 
-        # read input_file
-        if not os.path.isfile(input_file):
-            print(f"找不到輸入檔 {input_file}，跳過 {cpp_filename}。")
+        # read input_file_path
+        if not os.path.isfile(input_file_path):
+            print(f"找不到輸入檔 {input_file_path}，跳過 {cpp_filename}。")
             continue
 
-        with open(input_file, "r") as f:
+        with open(input_file_path, "r") as f:
             #lines = f.readlines()
             lines = [line.rstrip() for line in f if line.strip() != ""]
         f.close()
@@ -268,19 +271,19 @@ def process_student_folder(folder, num_programs,test_num_i):
             
             with open(test_input_file, "w") as tif:
                 tif.write(test_data)
-            tif.close()
 
             # 使用 testinput.txt 作為標準輸入來執行編譯後的程式
-            with open(test_input_file, "r") as tif:
-                run_result = subprocess.run(exe_path,stdin=tif,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,encoding="utf-8",errors="ignore")    #replace errors="ignore"
-            tif.close()
-                
+            try:
+                with open(test_input_file, "r") as tif:
+                    run_result = subprocess.run(exe_path,stdin=tif,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,encoding="utf-8",errors="ignore",timeout=test_timeout)    #replace errors="ignore"
+            except subprocess.TimeoutExpired:
+                print(f"執行 {os.path.basename(exe_path)} 時逾時 {test_timeout} 秒，已跳過。")
+                continue
+            
             output=run_result.stdout
-            #print(repr(output))
             if not output.endswith("\n"):
                 output += "\n"
-            #print(repr(output))
-            
+
             # 結果寫入
             retries = 0
             while retries < max_retries:
@@ -301,7 +304,7 @@ def process_student_folder(folder, num_programs,test_num_i):
                 tif.write("")
 
 #比對答案
-def comparison_student_data(folder, num_problems, high_num_problems):
+def comparison_student_data(folder, num_problems, high_num_problems,base_dir):
     """
     比對資料夾內的 ioutput.txt 與 ians.txt，
     回傳：
@@ -311,13 +314,14 @@ def comparison_student_data(folder, num_problems, high_num_problems):
     """
     results = []
     error_count = 0
-    wrong_questions = []  # 用來記錄哪幾題錯誤
+    wrong_questions = []  # 記錄哪幾題錯誤
     high_start= num_problems - high_num_problems + 1
     high_error_count = 0
+    test_file_path = os.path.join(base_dir, test_file_dir)
 
     for i in range(1, num_problems + 1):
         output_file = os.path.join(folder, f"{i}output.txt")
-        ans_file = os.path.join(os.getcwd(), f"{i}ans.txt")
+        ans_file_path = os.path.join(test_file_path, f"{i}ans.txt")
 
         if not os.path.exists(output_file):
             print(f"找不到 {i}output.txt")
@@ -328,7 +332,7 @@ def comparison_student_data(folder, num_problems, high_num_problems):
                 error_count += 1
             wrong_questions.append(i)
             continue
-        if not os.path.exists(ans_file):
+        if not os.path.exists(ans_file_path):
             print(f"找不到答案檔 {i}ans.txt，題號 {i}")
             results.append("?")
             if i >= high_start:
@@ -342,7 +346,7 @@ def comparison_student_data(folder, num_problems, high_num_problems):
             student_output = f_out.read().strip()
         f_out.close()
 
-        with open(ans_file, "r", encoding="utf-8") as f_ans:
+        with open(ans_file_path, "r", encoding="utf-8") as f_ans:
             correct_output = f_ans.read().strip()
         f_ans.close()
 
@@ -481,7 +485,7 @@ def format_excel(excel_file):
 def main():
     global excel_file
 
-    print(f"寫入重試次數: {max_retries}\n每次等待時間(s): {retry_delay}\n\n")
+    print(f"寫入重試次數: {max_retries}\n每次等待時間(s): {retry_delay}\n每個程式最大執行時間(s): {test_timeout}\n")
 
     # 詢問使用者本次要執行幾個程式
     try:
@@ -541,11 +545,11 @@ def main():
                     continue
                 num+=1
                 print(f"\n\n{num}.處理資料夾：{os.path.basename(item)}")
-                process_student_folder(item, num_problems,test_num_i)
+                process_student_folder(item, num_problems,test_num_i,base_dir)
 
                 student = os.path.basename(item)
                 #print(f"{num}. 學生 {student}")
-                results, error_count, high_error_count, wrong_questions = comparison_student_data(item, num_problems, high_num_problems)
+                results, error_count, high_error_count, wrong_questions = comparison_student_data(item, num_problems, high_num_problems,base_dir)
                 #print("wrong_questions: ",wrong_questions)
                 write_errors_to_excel(student, wrong_questions)
                 result_str = " ".join(results)
