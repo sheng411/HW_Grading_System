@@ -75,16 +75,16 @@ def unzip_file(base_dir):
         print(f"錯誤：{hw_folder} 內有多個壓縮檔，請手動確認")
 
 #find student root
-def find_student_root(base_dir):
-    subfolders = [d for d in os.listdir(base_dir) if os.path.isdir(os.path.join(base_dir, d))]
+def find_student_root(hw_dir_path):
+    subfolders = [d for d in os.listdir(hw_dir_path) if os.path.isdir(os.path.join(hw_dir_path, d))]
     if len(subfolders) == 1:
         #print("subfolders: ",subfolders)
-        return os.path.join(base_dir, subfolders[0])
+        return os.path.join(hw_dir_path, subfolders[0])
     else:
         max_count = 0
         candidate = None
         for folder in subfolders:
-            folder_path = os.path.join(base_dir, folder)
+            folder_path = os.path.join(hw_dir_path, folder)
             #print("folder_path: ",folder_path)
             subdirs = [d for d in os.listdir(folder_path) if os.path.isdir(os.path.join(folder_path, d))]
             #print("subdirs: ",subdirs)
@@ -136,6 +136,8 @@ def student_folder_name_excel(student_root,check_excel):
     row = 2
     for folder in os.listdir(student_root):
         folder_path = os.path.join(student_root, folder)
+        chinese_name = None
+        student_id = None
         if os.path.isdir(folder_path):
             # 修改正則表達式以捕獲中文姓名與學號
             m = re.search(r'^([\u4e00-\u9fff]+).*?(\d{8,9}[A-Za-z])(?=_|$)', folder)
@@ -143,6 +145,7 @@ def student_folder_name_excel(student_root,check_excel):
             if m:
                 chinese_name = m.group(1)
                 student_id = m.group(2)
+                print(f"chinse_name: {chinese_name}, student_id: {student_id}")
                 #new_name = f"{chinese_name}_{student_id}"
                 #new_name = f"{student_id}_{chinese_name}"
                 new_name = f"{student_id}"
@@ -245,22 +248,44 @@ def move_non_cpp_folders(hw_folder_path):
                 print(f"{check_count}. 已將 {student_folder} 移動到 {error_student_folder} 資料夾")
                 check_count += 1
 
-
+def read_blocks(file_path):
+    blocks = []
+    current_block = []
+    with open(file_path, "r") as f:
+        for line in f:
+            line = line.rstrip("\n")
+            if line.strip() == "":
+                if current_block:
+                    blocks.append(current_block)
+                    current_block = []
+            else:
+                current_block.append(line)
+        if current_block:
+            blocks.append(current_block)
+    return blocks
 
 #compile and test
-def process_student_folder(folder, num_programs,test_num_i,base_dir):
+def process_student_folder(folder, num_programs,score,base_dir):
+    total_score = 0
+    results = []
+    error_count = 0
+    wrong_questions = []  # 記錄哪幾題錯誤
     for i in range(1, num_programs + 1):
         cpp_filename = f"{i}.cpp"
         cpp_path = os.path.join(folder, cpp_filename)
         test_file_path = os.path.join(base_dir, test_file_dir)
 
-
-        #if os.path.basename(folder) == error_student_folder:
-        #    print(f"跳過 {cpp_filename}，因為資料夾名稱為 {error_student_folder}")
-        #    continue
+        '''
+        if os.path.basename(folder) == error_student_folder:
+            print(f"跳過 {cpp_filename}，因為資料夾名稱為 {error_student_folder}")
+            continue
+        '''
 
         if not os.path.isfile(cpp_path):
             print(f"*找不到 {cpp_filename},Pass {i}")
+            results.append("X")
+            error_count += 1
+            wrong_questions.append(i)
             continue
 
         # 編譯程式，將執行檔命名為「i」(不含副檔名)
@@ -273,6 +298,9 @@ def process_student_folder(folder, num_programs,test_num_i,base_dir):
         result = subprocess.run(compile_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         if result.returncode != 0:
             print(f"編譯 {os.path.basename(cpp_path)} 時發生錯誤: {result.stderr}")
+            results.append("X")
+            error_count += 1
+            wrong_questions.append(i)
             continue
         else:
             print(f"成功編譯 {os.path.basename(cpp_path)} 為 {os.path.basename(exe_path)}.exe")
@@ -280,40 +308,51 @@ def process_student_folder(folder, num_programs,test_num_i,base_dir):
         # 設定測試檔案：
         input_filename = f"{i}input.txt"
         input_file_path = os.path.join(test_file_path, input_filename)
-        #test_input_file = "testinput.txt"
+        
+        ans_filename = f"{i}ans.txt"
+        ans_file_path = os.path.join(test_file_path, ans_filename)
 
         # 輸出結果
         output_filename = f"{i}output.txt"
-        output_file = os.path.join(folder, output_filename)
+        output_file_path = os.path.join(folder, output_filename)
 
-        # clear output_file
-        with open(output_file, "w") as outf:
+        # clear output_file_path
+        with open(output_file_path, "w") as outf:
             outf.write("")
 
         # read input_file_path
         if not os.path.isfile(input_file_path):
             print(f"找不到輸入檔 {input_file_path}，跳過 {cpp_filename}。")
+            results.append("X")
+            error_count += 1
+            wrong_questions.append(i)
             continue
 
+        input_blocks = read_blocks(input_file_path)
+        ans_blocks = read_blocks(ans_file_path)
+        '''
         with open(input_file_path, "r") as f:
             #lines = f.readlines()
             lines = [line.rstrip() for line in f if line.strip() != ""]
         f.close()
-
-        
-        '''
         for line in lines:
             test_data = line.strip()
             if test_data == "":
                 continue  # 忽略空行
         '''
 
-       # 以 test_num_i 為單位分組，每次取 test_num_i 行
-        for i in range(0, len(lines), test_num_i):
-            # 取出當前測試案例的所有行
-            test_case_lines = lines[i:i + test_num_i]
-            # 組合成一個字串，並補上換行符號
-            test_data = "\n".join(test_case_lines) + "\n"
+        ans_check = 0   #紀錄答對數
+        total_count = len(input_blocks) #總筆數
+        ans_count = len(ans_blocks)  #答案數
+        if total_count != ans_count:
+            print(f"測試案例數量與答案數量不符，測試案例數量: {total_count}，答案數量: {ans_count}")
+            er=input("是否繼續? (y/n): ")
+            if er.lower() == "n":
+                return
+            continue
+
+        for idx, block in enumerate(input_blocks):
+            test_data = "\n".join(block) + "\n"
             
             with open(test_input_file, "w") as tif:
                 tif.write(test_data)
@@ -328,13 +367,13 @@ def process_student_folder(folder, num_programs,test_num_i,base_dir):
             
             output=run_result.stdout
             if not output.endswith("\n"):
-                output += "\n"
+                output += "\n\n"
 
             # 結果寫入
             retries = 0
             while retries < max_retries:
                 try:
-                    with open(output_file, "a",errors="ignore") as outf:
+                    with open(output_file_path, "a",errors="ignore") as outf:
                         outf.write(output)
                     break
                 except PermissionError as e:
@@ -343,11 +382,37 @@ def process_student_folder(folder, num_programs,test_num_i,base_dir):
                     time.sleep(retry_delay)
             else:
                 # 如果重試次數用完，依需求決定要怎麼處理，例如記錄錯誤或跳過
-                print(f"無法寫入檔案 {output_file}，請確認檔案是否被其他程式使用。")
+                print(f"無法寫入檔案 {output_file_path}，請確認檔案是否被其他程式使用。")
+            
+
+            #學生輸出和標準答案比對
+            if idx < len(ans_blocks):
+                expected = "\n".join(ans_blocks[idx]) + "\n"
+                if output.strip() == expected.strip():
+                    print(f"測資 {idx+1} 正確")
+                    ans_check += 1
+                else:
+                    print(f"測資 {idx+1} 錯誤")
+                    print(f"預期輸出: {expected}")
+                    print(f"實際輸出: {output}")
+            else:
+                print(f"沒有找到測試案例 {idx+1} 的標準答案。")
 
             # clear testinput.txt
             with open(test_input_file, "w") as tif:
                 tif.write("")
+        
+        total_score += score[i-1]*(ans_check/total_count)
+        print(f"第 {i} 題 答對 {ans_check}/{total_count} 測資，得分: {score[i-1]*(ans_check/total_count)}")
+        if ans_check != total_count:
+            results.append("X")
+            error_count += 1
+            wrong_questions.append(i)
+        else:
+            results.append("O")
+
+    total_score = round(total_score, 2) #取小數後兩位
+    return total_score, results, error_count, wrong_questions
 
 #比對答案
 def comparison_student_data(folder, num_problems, high_num_problems,base_dir):
@@ -446,13 +511,12 @@ def write_errors_to_excel(student, wrong_questions):
 
     wb.save(excel_file)
 #寫入C、D欄(錯誤題數、分數)
-def add_excel(student, total_problems, high_num_problems, error_count,score_ballast ,high_error_count ,high_score_ballast):
+def add_excel(student, total_problems, error_count,total_score):
     """
     參數:學生/總題數/高分題數/基本錯題/基本配分/高分錯題/高分配分
     開啟已存在的 StudentList.xlsx，尋找 A 欄與 student 相同的列，
     若找到則將 error_count 寫入 C 欄，(total_problems - error_count) 寫入 D 欄。
     """
-    base_num_problems = total_problems - high_num_problems
 
     if not os.path.exists(excel_file):
         print(f"Excel 檔 {excel_file} 不存在，無法更新。")
@@ -472,12 +536,10 @@ def add_excel(student, total_problems, high_num_problems, error_count,score_ball
 
     if found_row:
         # C 欄 (column=3) 寫入錯誤題數
-        ws.cell(found_row, 3).value = (error_count+high_error_count)
-        final_score = ((base_num_problems - error_count)*score_ballast)+((high_num_problems - high_error_count)*high_score_ballast)
-        print(f"Score: (({base_num_problems} - {error_count})*{score_ballast})+(({high_num_problems} - {high_error_count})*{high_score_ballast})={final_score}")
-        # D 欄 (column=4) 寫入總題數 - 錯題數
-        ws.cell(found_row, 4).value = final_score
-        print(f"已更新 {student} 的錯誤題數 = {error_count}，分數 = {final_score}")
+        ws.cell(found_row, 3).value = error_count
+        # D 欄 (column=4) 寫入總分數
+        ws.cell(found_row, 4).value = total_score
+        print(f"已更新 {student} 的錯誤題數 = {error_count}，分數 = {total_score}")
     else:
         print(f"未在 Excel 中找到 {student}，無法更新。")
 
@@ -540,16 +602,20 @@ def main():
     except ValueError:
         print("請輸入有效的整數。")
         return
-    score_ballast = int(input("基本題配分: "))
-    high_num_problems = int(input("困難題目數量: "))
-    high_score_ballast = int(input("困難題目配分: "))
-    test_num_i = int(input("每次測試資料行數(預設為1): ") or 1)
     
+    score=[]
+    for i in range(num_problems):
+        score.append(int(input(f"第 {i+1} 題配分: ")))
+    print("score: ",score)
+
 
     selection=input("作業編號(eg.02261): ")
     
     
     print("\n\n--------------- START INSPECION ---------------")
+    
+    now = datetime.now()
+    start_time = now.strftime("%Y/%m/%d %H:%M:%S")
     start = time.perf_counter()
 
     #解壓縮
@@ -567,12 +633,14 @@ def main():
 
     #rename
     base_dir = os.getcwd()      #當前目錄
-    student_root = find_student_root(base_dir)  #學生資料夾目錄
+    hw_dir_path = os.path.join(base_dir, hw_dir)  #作業資料夾目錄
+    student_root = find_student_root(hw_dir_path)  #學生資料夾目錄
         
     # 生成 Excel 學生清單
     generate_excel(student_root,check_excel)
 
     #重新命名學生資料夾並寫入Excel
+    print(f"student_root: {student_root} , check_excel: {check_excel}")
     student_folder_name_excel(student_root,check_excel)
 
     print("\n\n--------------- CHECK .cpp FILE ---------------")
@@ -593,21 +661,20 @@ def main():
             #print("item: ",item)
             if os.path.isdir(item):
                 if os.path.basename(item) == error_student_folder:
-                    #print(f"跳過 {item}，因為資料夾名稱為 {error_student_folder}")
+                    #print(f"跳過 {item}，資料夾名稱為 {error_student_folder}")
                     continue
                 num+=1
                 print(f"\n\n{num}.處理資料夾：{os.path.basename(item)}")
-                process_student_folder(item, num_problems,test_num_i,base_dir)
+                total_score, results, error_count, wrong_questions=process_student_folder(item, num_problems,score,base_dir)
 
                 student = os.path.basename(item)
                 #print(f"{num}. 學生 {student}")
-                results, error_count, high_error_count, wrong_questions = comparison_student_data(item, num_problems, high_num_problems,base_dir)
                 #print("wrong_questions: ",wrong_questions)
                 write_errors_to_excel(student, wrong_questions)
                 result_str = " ".join(results)
-                line = f"{student}----- {result_str} -----基本題錯 {error_count} 題 進階題錯 {high_error_count} 題\n"
-                #學生/總題數/高分題數/基本錯題/基本配分/高分錯題/高分配分
-                add_excel(student,num_problems, high_num_problems,error_count,score_ballast, high_error_count,high_score_ballast)
+                line = f"{student}----- {result_str} -----共錯 {error_count} 題，得分: {total_score}\n"
+                #學生/總題數/錯誤題數/總分
+                add_excel(student,num_problems,error_count,total_score)
 
                 total_file.write(line)
                 print(f"結果: {line.strip()}\n\n")
@@ -624,17 +691,21 @@ def main():
     execuition_time = f"執行時間: {end - start:.2f} 秒"
     average_time = f"每位學生平均處裡時間: {(end - start)/num:.2f} 秒"
     now = datetime.now()
-    formatted_time = now.strftime("%Y/%m/%d %H:%M:%S")
+    end_time = now.strftime("%Y/%m/%d %H:%M:%S")
+    start_t = f"開始時間: {start_time}"
+    end_t = f"結束時間: {end_time}"
 
     with open(total_file_path, "a", encoding="utf-8") as total_file:
-        total_file.write(f"{execuition_time}\n")
+        total_file.write(f"\n{execuition_time}\n")
         total_file.write(f"{average_time}\n")
-        total_file.write(f"{formatted_time}\n")
+        total_file.write(f"{start_t}\n")
+        total_file.write(f"{end_t}\n")
     total_file.close()
 
     print(f"\n\n{execuition_time}")
     print(f"{average_time}\n")
-    print(f"{formatted_time}\n")
+    print(f"{start_t}")
+    print(f"{end_t}\n")
 
 if __name__ == "__main__":
     main()
