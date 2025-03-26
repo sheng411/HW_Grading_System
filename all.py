@@ -74,26 +74,8 @@ def unzip_file(base_dir):
     else:
         print(f"錯誤：{hw_folder} 內有多個壓縮檔，請手動確認")
 
-#find student root
-def find_student_root(hw_dir_path):
-    subfolders = [d for d in os.listdir(hw_dir_path) if os.path.isdir(os.path.join(hw_dir_path, d))]
-    if len(subfolders) == 1:
-        #print("subfolders: ",subfolders)
-        return os.path.join(hw_dir_path, subfolders[0])
-    else:
-        max_count = 0
-        candidate = None
-        for folder in subfolders:
-            folder_path = os.path.join(hw_dir_path, folder)
-            #print("folder_path: ",folder_path)
-            subdirs = [d for d in os.listdir(folder_path) if os.path.isdir(os.path.join(folder_path, d))]
-            #print("subdirs: ",subdirs)
-            if len(subdirs) > max_count:
-                max_count = len(subdirs)
-                candidate = folder_path
-        return candidate
 #generate excel
-def generate_excel(student_root, check_excel):
+def generate_excel(check_excel):
     """
     生成一個 Excel 檔案 (StudentList.xlsx) 存放學生資料夾名稱與學號。
     Excel 的 A1 儲存格填入 "dir_name"，B1 填入 "S_id"，
@@ -130,12 +112,12 @@ def generate_excel(student_root, check_excel):
     wb.save(excel_file)
     print(f"Excel 檔案已儲存：{excel_file}")
 #rename student folders and update excel
-def student_folder_name_excel(student_root,check_excel):
+def student_folder_name_excel(hw_dir_path,check_excel):
     wb = load_workbook(excel_file)
     ws = wb.active  # 假設處理第一個工作表
     row = 2
-    for folder in os.listdir(student_root):
-        folder_path = os.path.join(student_root, folder)
+    for folder in os.listdir(hw_dir_path):
+        folder_path = os.path.join(hw_dir_path, folder)
         chinese_name = None
         student_id = None
         if os.path.isdir(folder_path):
@@ -149,7 +131,7 @@ def student_folder_name_excel(student_root,check_excel):
                 #new_name = f"{chinese_name}_{student_id}"
                 #new_name = f"{student_id}_{chinese_name}"
                 new_name = f"{student_id}"
-                new_path = os.path.join(student_root, new_name)
+                new_path = os.path.join(hw_dir_path, new_name)
                 if folder != new_name:
                     if os.path.exists(new_path):
                         print(f"新名稱 '{new_name}' 已存在，無法重新命名 '{folder}'")
@@ -634,19 +616,19 @@ def main():
     #rename
     base_dir = os.getcwd()      #當前目錄
     hw_dir_path = os.path.join(base_dir, hw_dir)  #作業資料夾目錄
-    student_root = find_student_root(hw_dir_path)  #學生資料夾目錄
+    #student_root = find_student_root(hw_dir_path)  #學生資料夾目錄
         
     # 生成 Excel 學生清單
-    generate_excel(student_root,check_excel)
+    generate_excel(check_excel)
 
     #重新命名學生資料夾並寫入Excel
-    print(f"student_root: {student_root} , check_excel: {check_excel}")
-    student_folder_name_excel(student_root,check_excel)
+    print(f"hw_dir_path: {hw_dir_path} , check_excel: {check_excel}")
+    student_folder_name_excel(hw_dir_path,check_excel)
 
     print("\n\n--------------- CHECK .cpp FILE ---------------")
 
     #check non cpp files
-    move_non_cpp_folders(student_root)
+    move_non_cpp_folders(hw_dir_path)
     print("\n\n--------------- TESTING ---------------")
 
     ctf=check_test_files(num_problems)
@@ -654,7 +636,7 @@ def main():
         return
 
     num=0
-    items = [os.path.join(student_root, d) for d in os.listdir(student_root) if os.path.isdir(os.path.join(student_root, d))]
+    items = [os.path.join(hw_dir_path, d) for d in os.listdir(hw_dir_path) if os.path.isdir(os.path.join(hw_dir_path, d))]
     total_file_path = os.path.join(base_dir, total_file_name)
     with open(total_file_path, "a", encoding="utf-8") as total_file:
         for item in items:
@@ -688,8 +670,12 @@ def main():
     format_excel(excel_file)
 
     end = time.perf_counter()
-    execuition_time = f"執行時間: {end - start:.2f} 秒"
-    average_time = f"每位學生平均處裡時間: {(end - start)/num:.2f} 秒"
+    elapsed = end - start
+    minutes = int((elapsed % 3600) // 60)
+    seconds = elapsed % 60
+
+    execuition_time = f"執行時間: {end - start:.2f} 秒 ({minutes}分{seconds:.2f秒})"
+    average_time = f"共 {num} 位學生，平均處裡時間: {(end - start)/num:.2f} 秒"
     now = datetime.now()
     end_time = now.strftime("%Y/%m/%d %H:%M:%S")
     start_t = f"開始時間: {start_time}"
