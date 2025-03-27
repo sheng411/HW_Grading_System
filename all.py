@@ -75,7 +75,7 @@ def unzip_file(base_dir):
         print(f"錯誤：{hw_folder} 內有多個壓縮檔，請手動確認")
 
 #generate excel
-def generate_excel(check_excel):
+def generate_excel(check_excel,score):
     """
     生成一個 Excel 檔案 (StudentList.xlsx) 存放學生資料夾名稱與學號。
     Excel 的 A1 儲存格填入 "dir_name"，B1 填入 "S_id"，
@@ -100,11 +100,12 @@ def generate_excel(check_excel):
         wb = Workbook()
         ws = wb.active
         ws.title = "Student List"
-        ws["A1"] = "dir_name"
-        ws["B1"] = "S_name"
-        ws["C1"] = "Error score"
+        ws["A1"] = "Student ID"
+        ws["B1"] = "Student name"
+        ws["C1"] = "Error count"
         ws["D1"] = "Score"
         ws["E1"] = "Note"
+        ws["F1"] = f"Points: {score}"
 
         existing_sids = set()
         row = 2
@@ -122,7 +123,9 @@ def student_folder_name_excel(hw_dir_path,check_excel):
         student_id = None
         if os.path.isdir(folder_path):
             # 修改正則表達式以捕獲中文姓名與學號
-            m = re.search(r'^([\u4e00-\u9fff]+).*?(\d{8,9}[A-Za-z])(?=_|$)', folder)
+            #m = re.search(r'^([\u4e00-\u9fff]+).*?(\d{8,9}[A-Za-z])(?=_|$)', folder)
+            m = re.search(r'^([\u4e00-\u9fff]+).*?(\d{8}[A-Za-z])', folder)
+
             #print("m: ",m)
             if m:
                 chinese_name = m.group(1)
@@ -529,7 +532,7 @@ def add_excel(student, total_problems, error_count,total_score):
 
 
 #setting excel format
-def format_excel(excel_file):
+def format_excel(excel_file,avg_score_a):
     """
     開啟指定的 Excel 檔案，將所有儲存格的字體設定為 size=12，
     並自動調整每一欄的寬度，使內容能夠完整顯示。
@@ -541,6 +544,22 @@ def format_excel(excel_file):
     # 讀取既有 Excel
     wb = load_workbook(excel_file)
     ws = wb.active  # 假設要處理第一個工作表
+
+    found_row = None
+    for row_idx in range(2, ws.max_row + 2):
+        dir_name_cell = ws.cell(row=row_idx, column=1).value
+        if not dir_name_cell or str(dir_name_cell).strip() == "":
+            found_row = row_idx
+            break
+
+    avg_score = f"avg score: "
+    avg_num = round(sum(avg_score_a) / len(avg_score_a), 2)
+    if found_row:
+        ws.cell(found_row, 3).value = avg_score
+        ws.cell(found_row, 4).value = avg_num
+        print(f"已在 Excel 中將 {avg_score} 寫入 C 欄")
+    else:
+        print(f"未知錯誤，無法寫入 {avg_score}{avg_num}")
 
     # 1) 設定字體大小為 12
     for row in ws.iter_rows():
@@ -570,6 +589,7 @@ def format_excel(excel_file):
     # 存檔
     wb.save(excel_file)
     print(f"已完成對 {excel_file} 的字體與欄寬調整。")
+    return avg_score+str(avg_num)
 
 
 def main():
@@ -586,9 +606,24 @@ def main():
         return
     
     score=[]
+    avg_score_a=[]
     for i in range(num_problems):
         score.append(int(input(f"第 {i+1} 題配分: ")))
-    print("score: ",score)
+    print(f"\n總分: {sum(score)}")
+    print(f"score: {score}\n")
+
+    score_check=input("分數是否正確(預設為y): ")or "y"
+    while score_check.lower() == "n":
+        if score_check.lower() == "n":
+            score_check_count=int(input("請重新輸入第幾題: "))
+            if score_check_count>num_problems or score_check_count<=0:
+                print(f"\n請輸入正確的題號!\n")
+                continue
+            score[score_check_count-1]=int(input(f"第 {score_check_count} 題配分: "))
+            print(f"\n總分: {sum(score)}")
+            print(f"score: {score}\n")
+            score_check=input("分數是否正確(預設為y): ")or "y"
+
 
 
     selection=input("作業編號(eg.02261): ")
@@ -619,10 +654,10 @@ def main():
     #student_root = find_student_root(hw_dir_path)  #學生資料夾目錄
         
     # 生成 Excel 學生清單
-    generate_excel(check_excel)
+    generate_excel(check_excel,score)
 
     #重新命名學生資料夾並寫入Excel
-    print(f"hw_dir_path: {hw_dir_path} , check_excel: {check_excel}")
+    #print(f"hw_dir_path: {hw_dir_path} , check_excel: {check_excel}")
     student_folder_name_excel(hw_dir_path,check_excel)
 
     print("\n\n--------------- CHECK .cpp FILE ---------------")
@@ -654,7 +689,8 @@ def main():
                 #print("wrong_questions: ",wrong_questions)
                 write_errors_to_excel(student, wrong_questions)
                 result_str = " ".join(results)
-                line = f"{student}----- {result_str} -----共錯 {error_count} 題，得分: {total_score}\n"
+                line = f"{student}----- {result_str} -----共錯 {error_count} 題，得分: {total_score:.2f}\n"
+                avg_score_a.append(total_score)
                 #學生/總題數/錯誤題數/總分
                 add_excel(student,num_problems,error_count,total_score)
 
@@ -667,14 +703,14 @@ def main():
     
  
     #設定Excel格式
-    format_excel(excel_file)
+    avg_score_s=format_excel(excel_file,avg_score_a)
 
     end = time.perf_counter()
     elapsed = end - start
     minutes = int((elapsed % 3600) // 60)
     seconds = elapsed % 60
 
-    execuition_time = f"執行時間: {end - start:.2f} 秒 ({minutes}分{seconds:.2f秒})"
+    execuition_time = f"執行時間: {end - start:.2f} 秒 ({minutes} 分 {seconds:.2f} 秒)"
     average_time = f"共 {num} 位學生，平均處裡時間: {(end - start)/num:.2f} 秒"
     now = datetime.now()
     end_time = now.strftime("%Y/%m/%d %H:%M:%S")
@@ -682,7 +718,8 @@ def main():
     end_t = f"結束時間: {end_time}"
 
     with open(total_file_path, "a", encoding="utf-8") as total_file:
-        total_file.write(f"\n{execuition_time}\n")
+        total_file.write(f"\n{avg_score_s}\n")
+        total_file.write(f"{execuition_time}\n")
         total_file.write(f"{average_time}\n")
         total_file.write(f"{start_t}\n")
         total_file.write(f"{end_t}\n")
