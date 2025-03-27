@@ -14,9 +14,9 @@ test_input_file = "testinput.txt"
 total_file_name = "total.txt"
 error_student_folder = "0Error"
 file_extension='.cpp'
-max_retries = 3  # 最多重試次數
-retry_delay = 1  # 每次重試間隔秒數
-test_timeout= 10
+max_retries = 3     # 最多重試次數
+retry_delay = 1     # 每次重試間隔秒數
+test_timeout= 10    # 每個程式最大執行時間(s)
 test_file_dir = "test_file"
 hw_dir= "HW_folder"
 
@@ -32,29 +32,6 @@ hw_dir: 作業資料夾
 
 '''
 
-
-#檢查測試檔案是否存在
-def check_test_files(num_programs):
-    if not os.path.exists(test_file_dir):
-        print("未找到測試程式，正在建立 test_file 資料夾...")
-        os.makedirs(test_file_dir)  # 建立資料夾
-        print("test_file 資料夾已建立。")
-        return True
-    else:
-        print("test_file 資料夾已存在，繼續執行程式。")
-
-    for i in range(1, num_programs + 1):
-        input_filename = f"{i}input.txt"
-        ans_filename = f"{i}ans.txt"
-        input_file_path = os.path.join(test_file_dir, input_filename)
-        ans_file_path = os.path.join(test_file_dir, ans_filename)
-        if not os.path.isfile(input_file_path):
-            print(f"找不到測試檔 {input_filename}，請檢查。")
-            return True
-        if not os.path.isfile(ans_file_path):
-            print(f"找不到答案檔 {ans_filename}，請檢查。")
-            return True
-    return False
 
 #解壓縮(.zip)
 def unzip_file(base_dir):
@@ -73,7 +50,6 @@ def unzip_file(base_dir):
         print(f"錯誤：{hw_folder} 內沒有找到壓縮檔")
     else:
         print(f"錯誤：{hw_folder} 內有多個壓縮檔，請手動確認")
-
 #generate excel
 def generate_excel(check_excel,score):
     """
@@ -233,6 +209,30 @@ def move_non_cpp_folders(hw_folder_path):
                 print(f"{check_count}. 已將 {student_folder} 移動到 {error_student_folder} 資料夾")
                 check_count += 1
 
+
+#檢查測試檔案是否存在
+def check_test_files(num_programs):
+    if not os.path.exists(test_file_dir):
+        print("未找到測試程式，正在建立 test_file 資料夾...")
+        os.makedirs(test_file_dir)  # 建立資料夾
+        print("test_file 資料夾已建立。")
+        return True
+    else:
+        print("test_file 資料夾已存在，繼續執行程式。")
+
+    for i in range(1, num_programs + 1):
+        input_filename = f"{i}input.txt"
+        ans_filename = f"{i}ans.txt"
+        input_file_path = os.path.join(test_file_dir, input_filename)
+        ans_file_path = os.path.join(test_file_dir, ans_filename)
+        if not os.path.isfile(input_file_path):
+            print(f"找不到測試檔 {input_filename}，請檢查。")
+            return True
+        if not os.path.isfile(ans_file_path):
+            print(f"找不到答案檔 {ans_filename}，請檢查。")
+            return True
+    return False
+
 def read_blocks(file_path):
     blocks = []
     current_block = []
@@ -248,9 +248,10 @@ def read_blocks(file_path):
         if current_block:
             blocks.append(current_block)
     return blocks
-
 #compile and test
 def process_student_folder(folder, num_programs,score,base_dir):
+    st_info = []
+    msg = ""
     total_score = 0
     results = []
     error_count = 0
@@ -260,14 +261,14 @@ def process_student_folder(folder, num_programs,score,base_dir):
         cpp_path = os.path.join(folder, cpp_filename)
         test_file_path = os.path.join(base_dir, test_file_dir)
 
-        '''
-        if os.path.basename(folder) == error_student_folder:
-            print(f"跳過 {cpp_filename}，因為資料夾名稱為 {error_student_folder}")
-            continue
-        '''
+        msg="\n------------------------------------------"
+        print(f"{msg}")
+        st_info.append(f"{msg}")
 
         if not os.path.isfile(cpp_path):
-            print(f"*找不到 {cpp_filename},Pass {i}")
+            msg = f"*找不到 {cpp_filename},Pass {i}"
+            print(f"{msg}")
+            st_info.append(f"{msg}")
             results.append("X")
             error_count += 1
             wrong_questions.append(i)
@@ -282,13 +283,17 @@ def process_student_folder(folder, num_programs,score,base_dir):
 
         result = subprocess.run(compile_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         if result.returncode != 0:
-            print(f"編譯 {os.path.basename(cpp_path)} 時發生錯誤: {result.stderr}")
+            msg=f"編譯 {os.path.basename(cpp_path)} 時發生錯誤: {result.stderr}"
+            print(f"{msg}")
+            st_info.append(f"{msg}")
             results.append("X")
             error_count += 1
             wrong_questions.append(i)
             continue
         else:
-            print(f"成功編譯 {os.path.basename(cpp_path)} 為 {os.path.basename(exe_path)}.exe")
+            msg=f"成功編譯 {os.path.basename(cpp_path)} 為 {os.path.basename(exe_path)}.exe"
+            print(f"{msg}")
+            st_info.append(f"{msg}")
 
         # 設定測試檔案：
         input_filename = f"{i}input.txt"
@@ -307,7 +312,9 @@ def process_student_folder(folder, num_programs,score,base_dir):
 
         # read input_file_path
         if not os.path.isfile(input_file_path):
-            print(f"找不到輸入檔 {input_file_path}，跳過 {cpp_filename}。")
+            msg=f"找不到輸入檔 {input_file_path}，跳過 {cpp_filename}。"
+            print(f"{msg}")
+            st_info.append(f"{msg}")
             results.append("X")
             error_count += 1
             wrong_questions.append(i)
@@ -330,7 +337,9 @@ def process_student_folder(folder, num_programs,score,base_dir):
         total_count = len(input_blocks) #總筆數
         ans_count = len(ans_blocks)  #答案數
         if total_count != ans_count:
-            print(f"測試案例數量與答案數量不符，測試案例數量: {total_count}，答案數量: {ans_count}")
+            msg=f"測試案例數量與答案數量不符，測試案例數量: {total_count}，答案數量: {ans_count}"
+            print(f"{msg}")
+            st_info.append(f"{msg}")
             er=input("是否繼續? (y/n): ")
             if er.lower() == "n":
                 return
@@ -347,7 +356,9 @@ def process_student_folder(folder, num_programs,score,base_dir):
                 with open(test_input_file, "r") as tif:
                     run_result = subprocess.run(exe_path,stdin=tif,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,encoding="utf-8",errors="ignore",timeout=test_timeout)    #replace errors="ignore"
             except subprocess.TimeoutExpired:
-                print(f"執行 {os.path.basename(exe_path)} 時逾時 {test_timeout} 秒，已跳過。")
+                msg=f"執行 {os.path.basename(exe_path)} 時逾時 {test_timeout} 秒，已跳過。"
+                print(f"{msg}")
+                st_info.append(f"{msg}")
                 continue
             
             output=run_result.stdout
@@ -363,32 +374,43 @@ def process_student_folder(folder, num_programs,score,base_dir):
                     break
                 except PermissionError as e:
                     retries += 1
-                    print(f"PermissionError 正在重試 {retries}/{max_retries} ...")
+                    msg=f"PermissionError 正在重試 {retries}/{max_retries} ..."
+                    print(f"{msg}")
+                    st_info.append(f"{msg}")
                     time.sleep(retry_delay)
             else:
                 # 如果重試次數用完，依需求決定要怎麼處理，例如記錄錯誤或跳過
-                print(f"無法寫入檔案 {output_file_path}，請確認檔案是否被其他程式使用。")
+                msg=f"無法寫入檔案 {output_file_path}，請確認檔案是否被其他程式使用。"
+                print(f"{msg}")
+                st_info.append(f"{msg}")
             
 
             #學生輸出和標準答案比對
             if idx < len(ans_blocks):
                 expected = "\n".join(ans_blocks[idx]) + "\n"
                 if output.strip() == expected.strip():
-                    print(f"測資 {idx+1} 正確")
+                    msg=f"測資 {idx+1} 正確"
+                    print(f"{msg}")
+                    st_info.append(f"{msg}")
                     ans_check += 1
                 else:
-                    print(f"測資 {idx+1} 錯誤")
-                    print(f"預期輸出: {expected}")
-                    print(f"實際輸出: {output}")
+                    msg=f"測資 {idx+1} 錯誤\n預期輸出: {expected}\n實際輸出: {output}"
+                    print(f"{msg}")
+                    st_info.append(f"{msg}")
             else:
-                print(f"沒有找到測試案例 {idx+1} 的標準答案。")
+                msg=f"沒有找到測試案例 {idx+1} 的標準答案。"
+                print(f"{msg}")
+                st_info.append(f"{msg}")
 
             # clear testinput.txt
             with open(test_input_file, "w") as tif:
                 tif.write("")
         
         total_score += score[i-1]*(ans_check/total_count)
-        print(f"第 {i} 題 答對 {ans_check}/{total_count} 測資，得分: {score[i-1]*(ans_check/total_count)}")
+        msg=f"第 {i} 題 答對 {ans_check}/{total_count} 測資，得分: {score[i-1]*(ans_check/total_count)}\n"
+        print(f"{msg}")
+        st_info.append(f"{msg}")
+
         if ans_check != total_count:
             results.append("X")
             error_count += 1
@@ -397,7 +419,8 @@ def process_student_folder(folder, num_programs,score,base_dir):
             results.append("O")
 
     total_score = round(total_score, 2) #取小數後兩位
-    return total_score, results, error_count, wrong_questions
+    return total_score, results, error_count, wrong_questions, st_info
+
 
 #比對答案
 def comparison_student_data(folder, num_problems, high_num_problems,base_dir):
@@ -467,6 +490,9 @@ def write_errors_to_excel(student, wrong_questions):
     尋找 A 欄 (dir_name) 與 student 相同的列，將
     '第 1,2,3 題錯誤' 寫入 E 欄 (第 5 欄)。
     """
+    st_info=[]
+    msg=""
+
     if not wrong_questions:
         # 全對就不寫任何東西
         return
@@ -490,19 +516,24 @@ def write_errors_to_excel(student, wrong_questions):
         # 組合字串：例如 "第 1,2,3 題錯誤"
         error_str = "第 " + ",".join(str(q) for q in wrong_questions) + " 題錯誤"
         ws.cell(found_row, 5).value = error_str  # 第 5 欄 (E 欄)
-        print(f"已在 Excel 中將 {student} 的錯題寫入 E 欄：{error_str}")
+        msg=f"\n已在 Excel 中將 {student} 的錯題寫入 E 欄：{error_str}"
+        print(f"{msg}")
+        st_info.append(f"{msg}")
     else:
-        print(f"未在 Excel 中找到 {student}，無法寫入錯題資訊。")
+        msg=f"未在 Excel 中找到 {student}，無法寫入錯題資訊。"
+        print(f"{msg}")
+        st_info.append(f"{msg}")
 
     wb.save(excel_file)
+    return st_info
 #寫入C、D欄(錯誤題數、分數)
-def add_excel(student, total_problems, error_count,total_score):
+def add_excel(student,error_count,total_score):
     """
     參數:學生/總題數/高分題數/基本錯題/基本配分/高分錯題/高分配分
     開啟已存在的 StudentList.xlsx，尋找 A 欄與 student 相同的列，
     若找到則將 error_count 寫入 C 欄，(total_problems - error_count) 寫入 D 欄。
     """
-
+    msg=""
     if not os.path.exists(excel_file):
         print(f"Excel 檔 {excel_file} 不存在，無法更新。")
         return
@@ -524,12 +555,14 @@ def add_excel(student, total_problems, error_count,total_score):
         ws.cell(found_row, 3).value = error_count
         # D 欄 (column=4) 寫入總分數
         ws.cell(found_row, 4).value = total_score
-        print(f"已更新 {student} 的錯誤題數 = {error_count}，分數 = {total_score}")
+        msg=f"已寫入學生: {student} ，錯誤題數 = {error_count}，分數 = {total_score}"
+        print(f"{msg}")
     else:
-        print(f"未在 Excel 中找到 {student}，無法更新。")
+        msg=f"未在 Excel 中找到 {student}，無法更新。"
+        print(f"{msg}")
 
     wb.save(excel_file)
-
+    return msg
 
 #setting excel format
 def format_excel(excel_file,avg_score_a):
@@ -557,7 +590,7 @@ def format_excel(excel_file,avg_score_a):
     if found_row:
         ws.cell(found_row, 3).value = avg_score
         ws.cell(found_row, 4).value = avg_num
-        print(f"已在 Excel 中將 {avg_score} 寫入 C 欄")
+        print(f"已在 Excel 中將 {avg_score}{avg_num} 寫入 C 欄")
     else:
         print(f"未知錯誤，無法寫入 {avg_score}{avg_num}")
 
@@ -675,28 +708,58 @@ def main():
     total_file_path = os.path.join(base_dir, total_file_name)
     with open(total_file_path, "a", encoding="utf-8") as total_file:
         for item in items:
-            #print("item: ",item)
+            student_info_a=[]
+            student_name = os.path.basename(item)
+            student_info = f"{student_name}.txt"
+            student_info_path=os.path.join(item,student_info)
+            
             if os.path.isdir(item):
-                if os.path.basename(item) == error_student_folder:
+                st_info = []
+                if student_name == error_student_folder:
                     #print(f"跳過 {item}，資料夾名稱為 {error_student_folder}")
                     continue
                 num+=1
-                print(f"\n\n{num}.處理資料夾：{os.path.basename(item)}")
-                total_score, results, error_count, wrong_questions=process_student_folder(item, num_problems,score,base_dir)
+                title_info=f"{num}.處理資料夾：{student_name}"
+                print(f"\n\n{title_info}")
+                total_score, results, error_count, wrong_questions,st_info=process_student_folder(item, num_problems,score,base_dir)
+                
+                student_info_a.append(title_info)
+                student_info_a.append(st_info)
+                st_info=[]
 
-                student = os.path.basename(item)
-                #print(f"{num}. 學生 {student}")
+                #print(f"{num}. 學生 {student_name}")
                 #print("wrong_questions: ",wrong_questions)
-                write_errors_to_excel(student, wrong_questions)
+                st_info=write_errors_to_excel(student_name, wrong_questions)
+                
                 result_str = " ".join(results)
-                line = f"{student}----- {result_str} -----共錯 {error_count} 題，得分: {total_score:.2f}\n"
+                line = f"{student_name}----- {result_str} -----共錯 {error_count} 題，得分: {total_score:.2f}"
                 avg_score_a.append(total_score)
                 #學生/總題數/錯誤題數/總分
-                add_excel(student,num_problems,error_count,total_score)
+                msg=add_excel(student_name,error_count,total_score)
 
                 total_file.write(line)
-                print(f"結果: {line.strip()}\n\n")
-    total_file.close()
+                total_file.write("\n")
+
+                end_info=f"結果: {line.strip()}\n"
+                print(f"{end_info}\n\n")
+                
+                student_info_a.append(st_info)
+                student_info_a.append(msg)
+                student_info_a.append(end_info)
+
+                with open(student_info_path, "w", encoding="utf-8") as student_file:
+                    for data in student_info_a:
+                        if isinstance(data, list):
+                            # 如果是列表，將裡面的每個元素各自換行寫入
+                            # 同時把 None 轉換成空字串，或過濾掉 None 值
+                            cleaned_list = [str(item) if item is not None else "" for item in data]
+                            student_file.write("\n".join(cleaned_list))
+                            student_file.write("\n")
+                        else:
+                            # 如果 data 為 None，就轉成空字串再寫入
+                            student_file.write(str(data) if data is not None else "")
+                            student_file.write("\n")
+
 
             
     print("\n\n--------------- END INSPECTION ---------------\n")
