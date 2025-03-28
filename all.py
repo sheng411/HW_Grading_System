@@ -83,6 +83,9 @@ def generate_excel(check_excel,score):
         ws["D1"] = "Score"
         ws["E1"] = "Note"
         ws["F1"] = f"Points: {score}"
+        ws["G1"] = "執行日期: "
+        now = datetime.now()
+        ws["G2"] = now.strftime("%Y/%m/%d %H:%M:%S")
 
         existing_sids = set()
         row = 2
