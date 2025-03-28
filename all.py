@@ -1,3 +1,4 @@
+from a_txt2pdf import *
 import os
 import re
 import subprocess
@@ -759,6 +760,7 @@ def main():
                             # 如果 data 為 None，就轉成空字串再寫入
                             student_file.write(str(data) if data is not None else "")
                             student_file.write("\n")
+                txt2pdf(student_name,student_info_path,item)
 
 
             
