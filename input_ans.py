@@ -26,6 +26,7 @@ def main():
     result = subprocess.run(compile_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     if result.returncode != 0:
         print(f"\n編譯 {os.path.basename(cpp_path)} 時發生錯誤: {result.stderr}")
+        return
     else:
         print(f"\n成功編譯 {os.path.basename(cpp_path)} 為 {os.path.basename(exe_path)}.exe")
     
@@ -36,39 +37,45 @@ def main():
     answers = []
     print("\n請依序輸入測試資料(每輸入一行請按 Enter): ")
 
-    for i in range(1,num_tests+1):
-        print(f"\n\n第 {i} 組測試資料: ")
-        test_data = ""
-        for j in range(param_count_str):
-            i_line = input().rstrip()  # 去除換行與多餘空白
-            if i_line == "":
-                break
-            test_inputs.append(i_line)
-            test_data += i_line + "\n"
+    with open(input_path, "w", encoding="utf-8") as inf,open(ans_path, "w", encoding="utf-8") as anf:
+        for i in range(1,num_tests+1):
+            print(f"\n\n第 {i} 組測試資料: ")
+            test_data = ""
+            for j in range(param_count_str):
+                i_line = input().rstrip()  # 去除換行與多餘空白
+                if i_line == "":
+                    break
+                
+                #test_inputs.append(i_line)
+                test_data += i_line + "\n"
+                inf.write(test_data + "\n")
 
-        result = subprocess.run(exe_path,input=test_data,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,encoding="utf-8",errors="ignore")    #replace errors="ignore" 
-        
-        print(f"\n第 {i} 組測試答案: ")
-        a_line = result.stdout
-        print(a_line)
+            result = subprocess.run(exe_path,input=test_data,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,encoding="utf-8",errors="ignore")    #replace errors="ignore" 
+            
+            print(f"\n第 {i} 組測試答案: ")
+            a_line = result.stdout
+            print(a_line)
 
-        answers.append(a_line)
-        test_inputs.append("")
-        answers.append("")
+            anf.write(a_line + "\n")
+            inf.write("")
+            anf.write("")
+            #answers.append(a_line)
+            #test_inputs.append("")
+            #answers.append("")
 
-    
+    '''
     # 將測試資料寫入 input 檔案中
-    with open(input_path, "w", encoding="utf-8") as f:
+    with open(input_path, "w", encoding="utf-8") as inf:
         for line in test_inputs:
-            f.write(line + "\n")
+            inf.write(line + "\n")
     print(f"\n\n測試資料已寫入 {input_filename}")
     
     # 將答案寫入 ans 檔案中
-    with open(ans_path, "w", encoding="utf-8") as f:
+    with open(ans_path, "w", encoding="utf-8") as anf:
         for ans in answers:
-            f.write(ans + "\n")
+            anf.write(ans + "\n")
     print(f"答案已寫入 {ans_filename}\n\n")
-
+    '''
 if __name__ == "__main__":
     main()
     input("執行完畢，請按 Enter 鍵退出...")
