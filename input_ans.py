@@ -5,10 +5,14 @@ compile_path = r"C:\msys64\mingw64\bin\g++.exe"
 
 def main():
     problem = int(input("題號(預設為0): ").strip()or 0)
-    num_tests = int(input("測資數量(預設為5): ")or 5)
+    num_tests = int(input("測資數量(預設為10): ")or 10)
     param_count_str = int(input("測試資料行數(預設為1): ")or 1)
     code_path = input("輸入測試檔案路徑(預設為當前): ").strip() or os.getcwd()
     file_path = input("輸入檔案存放路徑(預設為當前): ").strip() or os.getcwd()
+    code_path = os.path.join(code_path, "sample_code")
+    file_path = os.path.join(file_path, "test_file")
+    print(f"\n\n測試檔案路徑: {code_path}")
+    print(f"檔案存放路徑: {file_path}")
     
 
     # 設定輸入與答案檔案名稱，例如 1input.txt 與 1ans.txt
@@ -48,7 +52,7 @@ def main():
                 
                 #test_inputs.append(i_line)
                 test_data += i_line + "\n"
-                inf.write(test_data + "\n")
+            inf.write(test_data)
 
             result = subprocess.run(exe_path,input=test_data,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,encoding="utf-8",errors="ignore")    #replace errors="ignore" 
             
@@ -56,9 +60,9 @@ def main():
             a_line = result.stdout
             print(a_line)
 
-            anf.write(a_line + "\n")
-            inf.write("")
-            anf.write("")
+            anf.write(a_line)
+            inf.write("\n")
+            anf.write("\n")
             #answers.append(a_line)
             #test_inputs.append("")
             #answers.append("")
