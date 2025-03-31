@@ -7,10 +7,22 @@ def main():
     problem = int(input("題號(預設為0): ").strip()or 0)
     num_tests = int(input("測資數量(預設為10): ")or 10)
     param_count_str = int(input("測試資料行數(預設為1): ")or 1)
-    code_path = input("輸入測試檔案路徑(預設為當前): ").strip() or os.getcwd()
-    file_path = input("輸入檔案存放路徑(預設為當前): ").strip() or os.getcwd()
+    code_path = input("輸入測試程式路徑(預設為當前): ").strip() or os.getcwd()
+
+    path_check = input("測試程式路徑是否和檔案存放路徑相同?(預設為y): ") or "y"
+    if path_check.lower() == "y":
+        file_path = code_path
+    else:
+        file_path = input("輸入檔案存放路徑(預設為當前): ").strip() or os.getcwd()
+    
     code_path = os.path.join(code_path, "sample_code")
     file_path = os.path.join(file_path, "test_file")
+    if not os.path.exists(code_path):
+        os.makedirs(code_path)  # 如果路徑不存在，則創建它
+        return
+    if not os.path.exists(file_path):
+        os.makedirs(file_path)
+
     print(f"\n\n測試檔案路徑: {code_path}")
     print(f"檔案存放路徑: {file_path}")
     
@@ -37,8 +49,8 @@ def main():
     #print(f"input_path: {input_path}")
     
 
-    test_inputs = []
-    answers = []
+    #test_inputs = []
+    #answers = []
     print("\n請依序輸入測試資料(每輸入一行請按 Enter): ")
 
     with open(input_path, "w", encoding="utf-8") as inf,open(ans_path, "w", encoding="utf-8") as anf:
