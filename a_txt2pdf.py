@@ -1,5 +1,6 @@
 from fpdf import FPDF
 import os
+import shutil
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -23,9 +24,15 @@ class PDF(FPDF):
         self.cell(0, 10, f'{self.page_no()}', align='C')
 
 
-def txt2pdf(student_id, txt_file,item):
+def txt2pdf(student_id, txt_file,item,hw_dir_path):
     pdf_file = f"{student_id}.pdf"
     pdf_output_path=os.path.join(item,pdf_file)
+    hw_pdf_dir=os.path.join(hw_dir_path,"0All_pdf")
+    if not os.path.exists(hw_pdf_dir):
+        os.makedirs(hw_pdf_dir)  # 如果資料夾不存在，則建立它
+        print(f"已建立資料夾: {hw_pdf_dir}")
+    else:
+        print(f"資料夾 {hw_pdf_dir} 已存在，將覆蓋檔案。")
 
     # 檢查字型檔案是否存在
     font_path = "kaiu.ttf"
@@ -49,6 +56,8 @@ def txt2pdf(student_id, txt_file,item):
             pdf.multi_cell(0, 5, line.strip())
 
     pdf.output(pdf_output_path)
+    shutil.copy(pdf_output_path, hw_pdf_dir)
+
 
     print("PDF OK!")
 
