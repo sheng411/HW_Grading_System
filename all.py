@@ -5,13 +5,14 @@ import subprocess
 import time
 import zipfile
 import shutil
+import json
 from datetime import datetime
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font
 from openpyxl.utils import get_column_letter
 
 compile_path = r"C:\msys64\mingw64\bin\g++.exe"
-test_input_file = "testinput.txt"
+test_input_file = "tempinput.txt"
 total_file_name = "total.txt"
 error_student_folder = "0Error"
 file_extension='.cpp'
@@ -20,6 +21,7 @@ retry_delay = 1     # 每次重試間隔秒數
 test_timeout= 10    # 每個程式最大執行時間(s)
 test_file_dir = "test_file"
 hw_dir= "HW_folder"
+json_file = "config.json"
 
 '''
 test input file name: 1input.txt, 2input.txt, ...
@@ -84,8 +86,8 @@ def generate_excel(check_excel,score):
         ws["E1"] = "Note"
         ws["F1"] = f"Points: {score}"
         ws["G1"] = "執行日期: "
-        now = datetime.now()
-        ws["G2"] = now.strftime("%Y/%m/%d %H:%M:%S")
+        now_t = datetime.now()
+        ws["H1"] = now_t.strftime("%Y/%m/%d %H:%M:%S")
 
         existing_sids = set()
         row = 2
@@ -520,7 +522,7 @@ def write_errors_to_excel(student, wrong_questions):
         # 組合字串：例如 "第 1,2,3 題錯誤"
         error_str = "第 " + ",".join(str(q) for q in wrong_questions) + " 題錯誤"
         ws.cell(found_row, 5).value = error_str  # 第 5 欄 (E 欄)
-        msg=f"\n已在 Excel 中將 {student} 的錯題寫入 E 欄：{error_str}"
+        msg=f"\n學生 {student} 錯誤題目：{error_str}"
         print(f"{msg}")
         st_info.append(f"{msg}")
     else:
@@ -631,41 +633,62 @@ def format_excel(excel_file,avg_score_a):
 
 def main():
     global excel_file
+    score=[]
+    avg_score_a=[]
+    base_dir = os.getcwd()      #當前目錄
 
     print(f"寫入重試次數: {max_retries}\n每次等待時間(s): {retry_delay}\n每個程式最大執行時間(s): {test_timeout}\n")
 
-    # 詢問使用者本次要執行幾個程式
-    unzip= int(input("是否解壓縮檔案(預設為1): ") or 1)
-    try:
-        num_problems = int(input("檢測程式數量? "))
-    except ValueError:
-        print("請輸入有效的整數。")
-        return
-    
-    score=[]
-    avg_score_a=[]
-    for i in range(num_problems):
-        score.append(int(input(f"第 {i+1} 題配分: ")))
-    print(f"\n總分: {sum(score)}")
-    print(f"score: {score}\n")
+    json_path_dir = os.path.join(base_dir, test_file_dir)
+    json_file_path = os.path.join(json_path_dir, json_file)
+    #print(f"json_path_dir: {json_path_dir}")
+    #print(f"json_file_path: {json_file_path}")
 
-    score_check=input("分數是否正確(預設為y): ")or "y"
-    while score_check.lower() == "n":
-        if score_check.lower() == "n":
-            score_check_count=int(input("請重新輸入第幾題: "))
-            if score_check_count>num_problems or score_check_count<=0:
-                print(f"\n請輸入正確的題號!\n")
-                continue
-            score[score_check_count-1]=int(input(f"第 {score_check_count} 題配分: "))
-            print(f"\n總分: {sum(score)}")
-            print(f"score: {score}\n")
-            score_check=input("分數是否正確(預設為y): ")or "y"
+    if os.path.exists(json_file_path):
+        print(f"\n找到json檔案: {json_file_path}")
+        import_json=input("是否讀取json檔案(預設為n): ") or "n"
+    else:
+        import_json="n"
 
+    if import_json.lower() == "y":
+        if os.path.exists(json_file_path):
+            print(f"\nThe JSON file exists. path: {json_file_path}")
+            with open(json_file_path, "r") as f:
+                data = json.load(f)
+                unzip = data.get("unzip", "y")
+                num_problems = data.get("num_problems", 0)
+                score = data.get("score", [])
+                selection = data.get("selection", "")
+            print(f"讀取json檔案成功\nunzip: {unzip}, num_problems: {num_problems}, score: {score}, selection: {selection}")
+                
+    else:
+        # 詢問使用者本次要執行幾個程式
+        unzip= input("是否解壓縮檔案(預設為y): ") or "y"
+        try:
+            num_problems = int(input("檢測程式數量? "))
+        except ValueError:
+            print("請輸入有效的整數。")
+            return
+        
+        for i in range(num_problems):
+            score.append(int(input(f"第 {i+1} 題配分: ")))
+        print(f"\n總分: {sum(score)}")
+        print(f"score: {score}\n")
 
+        score_check=input("分數是否正確(預設為y): ")or "y"
+        while score_check.lower() == "n":
+            if score_check.lower() == "n":
+                score_check_count=int(input("請重新輸入第幾題: "))
+                if score_check_count>num_problems or score_check_count<=0:
+                    print(f"\n請輸入正確的題號!\n")
+                    continue
+                score[score_check_count-1]=int(input(f"第 {score_check_count} 題配分: "))
+                print(f"\n總分: {sum(score)}")
+                print(f"score: {score}\n")
+                score_check=input("分數是否正確(預設為y): ")or "y"
 
-    selection=input("作業編號(eg.02261): ")
-    
-    
+        selection=input("作業編號(eg.02261): ")
+
     print("\n\n--------------- START INSPECION ---------------")
     
     now = datetime.now()
@@ -673,7 +696,7 @@ def main():
     start = time.perf_counter()
 
     #解壓縮
-    if unzip:
+    if unzip.lower() == "y":
         unzip_file(os.getcwd())
 
     #檢查是否有Excel檔案
@@ -684,17 +707,14 @@ def main():
     else:
         print(f"{excel_file} is False")
         check_excel = 0
-
-    #rename
-    base_dir = os.getcwd()      #當前目錄
-    hw_dir_path = os.path.join(base_dir, hw_dir)  #作業資料夾目錄
-    #student_root = find_student_root(hw_dir_path)  #學生資料夾目錄
-        
+    
     # 生成 Excel 學生清單
     generate_excel(check_excel,score)
 
+    #rename
+    hw_dir_path = os.path.join(base_dir, hw_dir)  #作業資料夾目錄
+        
     #重新命名學生資料夾並寫入Excel
-    #print(f"hw_dir_path: {hw_dir_path} , check_excel: {check_excel}")
     student_folder_name_excel(hw_dir_path,check_excel)
 
     print("\n\n--------------- CHECK .cpp FILE ---------------")
