@@ -367,7 +367,11 @@ def process_student_folder(folder, num_programs,score,base_dir):
                 st_info.append(f"{msg}")
                 continue
             
-            output=run_result.stdout
+            #print("before output: ",repr(run_result.stdout))
+            output=re.sub(r"\s*\n\s*", run_result.stdout)   #[\s*]0或多個空白字元
+            output=output.strip()
+            #print("after output: ",repr(output))
+
             if not output.endswith("\n"):
                 output += "\n\n"
 
