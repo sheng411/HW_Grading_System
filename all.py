@@ -173,7 +173,7 @@ def student_folder_name_excel(hw_dir_path,check_excel):
     wb.save(excel_file)
     print(f"Excel 檔案已儲存：{excel_file}")
 
-
+'''
 #move non cpp files
 def move_non_cpp_folders(hw_folder_path):
     check_count = 1
@@ -214,7 +214,7 @@ def move_non_cpp_folders(hw_folder_path):
                 shutil.move(student_folder_path, target_path)
                 print(f"{check_count}. 已將 {student_folder} 移動到 {error_student_folder} 資料夾")
                 check_count += 1
-
+'''
 
 #檢查測試檔案是否存在
 def check_test_files(num_programs):
@@ -368,7 +368,7 @@ def process_student_folder(folder, num_programs,score,base_dir):
                 continue
             
             #print("before output: ",repr(run_result.stdout))
-            output=re.sub(r"\s*\n\s*", run_result.stdout)   #[\s*]0或多個空白字元
+            output=re.sub(r"\s*\n\s*", "\n", run_result.stdout)   #[\s*]0或多個空白字元
             output=output.strip()
             #print("after output: ",repr(output))
 
@@ -724,7 +724,7 @@ def main():
     print("\n\n--------------- CHECK .cpp FILE ---------------")
 
     #check non cpp files
-    move_non_cpp_folders(hw_dir_path)
+    #move_non_cpp_folders(hw_dir_path)
     print("\n\n--------------- TESTING ---------------")
 
     ctf=check_test_files(num_problems)
@@ -762,7 +762,7 @@ def main():
                 result_str = " ".join(results)
                 line = f"{student_name}----- {result_str} -----共錯 {error_count} 題，得分: {total_score:.2f}"
                 avg_score_a.append(total_score)
-                #學生/總題數/錯誤題數/總分
+                #學生/錯誤題數/總分
                 msg=add_excel(student_name,error_count,total_score)
 
                 total_file.write(line)
@@ -787,7 +787,7 @@ def main():
                             # 如果 data 為 None，就轉成空字串再寫入
                             student_file.write(str(data) if data is not None else "")
                             student_file.write("\n")
-                txt2pdf(student_name,student_info_path,item)
+                txt2pdf(student_name,student_info_path,item,hw_dir_path)
 
 
             
