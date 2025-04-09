@@ -25,7 +25,8 @@ class PDF(FPDF):
 
 
 def txt2pdf(student_id, txt_file,item,hw_dir_path):
-    pdf_file = f"{student_id}.pdf"
+    student_id = student_id.lower()
+    pdf_file = f"isu{student_id}.pdf"
     pdf_output_path=os.path.join(item,pdf_file)
     hw_pdf_dir=os.path.join(hw_dir_path,"0All_pdf")
     if not os.path.exists(hw_pdf_dir):
