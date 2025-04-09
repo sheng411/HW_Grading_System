@@ -4,7 +4,6 @@ import re
 import subprocess
 import time
 import zipfile
-import shutil
 import json
 from datetime import datetime
 from openpyxl import Workbook, load_workbook
@@ -83,11 +82,12 @@ def generate_excel(check_excel,score):
         ws["B1"] = "Student name"
         ws["C1"] = "Error count"
         ws["D1"] = "Score"
-        ws["E1"] = "Note"
-        ws["F1"] = f"Points: {score}"
-        ws["G1"] = "執行日期: "
+        ws["E1"] = "Note(錯誤題目)"
+        ws["F1"] = "Note(無法找到檔案)"
+        ws["G1"] = f"Points: {score}"
+        ws["H1"] = "執行日期: "
         now_t = datetime.now()
-        ws["H1"] = now_t.strftime("%Y/%m/%d %H:%M:%S")
+        ws["I1"] = now_t.strftime("%Y/%m/%d %H:%M:%S")
 
         existing_sids = set()
         row = 2
@@ -217,7 +217,9 @@ def move_non_cpp_folders(hw_folder_path):
 '''
 
 #檢查測試檔案是否存在
-def check_test_files(num_programs):
+def check_test_files(num_programs,ctf_count):
+    if ctf_count == "n":
+        return False
     if not os.path.exists(test_file_dir):
         print("未找到測試程式，正在建立 test_file 資料夾...")
         os.makedirs(test_file_dir)  # 建立資料夾
@@ -261,7 +263,9 @@ def process_student_folder(folder, num_programs,score,base_dir):
     total_score = 0
     results = []
     error_count = 0
+    pass_count = 0
     wrong_questions = []  # 記錄哪幾題錯誤
+    pass_questions = []  # 記錄找不到的題目
     for i in range(1, num_programs + 1):
         cpp_filename = f"{i}.cpp"
         cpp_path = os.path.join(folder, cpp_filename)
@@ -275,9 +279,9 @@ def process_student_folder(folder, num_programs,score,base_dir):
             msg = f"*找不到 {cpp_filename},Pass {i}"
             print(f"{msg}")
             st_info.append(f"{msg}")
-            results.append("X")
-            error_count += 1
-            wrong_questions.append(i)
+            results.append("?")
+            pass_count += 1
+            pass_questions.append(i)
             continue
 
         # 編譯程式，將執行檔命名為「i」(不含副檔名)
@@ -320,10 +324,10 @@ def process_student_folder(folder, num_programs,score,base_dir):
         if not os.path.isfile(input_file_path):
             msg=f"找不到輸入檔 {input_file_path}，跳過 {cpp_filename}。"
             print(f"{msg}")
-            st_info.append(f"{msg}")
-            results.append("X")
-            error_count += 1
-            wrong_questions.append(i)
+            #st_info.append(f"{msg}")
+            #results.append("X")
+            #error_count += 1
+            #wrong_questions.append(i)
             continue
 
         input_blocks = read_blocks(input_file_path)
@@ -404,13 +408,13 @@ def process_student_folder(folder, num_programs,score,base_dir):
                     st_info.append(f"{msg}")
                     ans_check += 1
                 else:
-                    msg=f"測資 {idx+1} 錯誤\n預期輸出: {expected}\n實際輸出: {output}"
+                    msg=f"測資 {idx+1} 錯誤\n預期輸出:\n{expected}\n實際輸出:\n{output}"
                     print(f"{msg}")
                     st_info.append(f"{msg}")
             else:
                 msg=f"沒有找到測試案例 {idx+1} 的標準答案。"
                 print(f"{msg}")
-                st_info.append(f"{msg}")
+                #st_info.append(f"{msg}")
 
             # clear testinput.txt
             with open(test_input_file, "w") as tif:
@@ -429,7 +433,7 @@ def process_student_folder(folder, num_programs,score,base_dir):
             results.append("O")
 
     total_score = round(total_score, 2) #取小數後兩位
-    return total_score, results, error_count, wrong_questions, st_info
+    return total_score, results, error_count, pass_count, wrong_questions, pass_questions, st_info
 
 
 #比對答案
@@ -494,7 +498,7 @@ def comparison_student_data(folder, num_problems, high_num_problems,base_dir):
 
     return results, error_count, high_error_count, wrong_questions
 #寫入E欄(錯誤題目)
-def write_errors_to_excel(student, wrong_questions):
+def write_errors_to_excel(student, wrong_questions, pass_questions):
     """
     若 wrong_questions 不為空，則在 Excel (StudentList.xlsx) 裡，
     尋找 A 欄 (dir_name) 與 student 相同的列，將
@@ -503,7 +507,7 @@ def write_errors_to_excel(student, wrong_questions):
     st_info=[]
     msg=""
 
-    if not wrong_questions:
+    if not wrong_questions and not pass_questions:
         # 全對就不寫任何東西
         return
 
@@ -521,12 +525,17 @@ def write_errors_to_excel(student, wrong_questions):
         if dir_name_cell == student:
             found_row = row_idx
             break
-
+    error_str = ""
+    pass_str = ""
     if found_row:
         # 組合字串：例如 "第 1,2,3 題錯誤"
-        error_str = "第 " + ",".join(str(q) for q in wrong_questions) + " 題錯誤"
+        if wrong_questions:
+            error_str = "第 " + ",".join(str(q) for q in wrong_questions) + " 題錯誤."
+        if pass_questions:
+            pass_str = "第 " + ",".join(str(q) for q in pass_questions) + " 題無法找到檔案."
         ws.cell(found_row, 5).value = error_str  # 第 5 欄 (E 欄)
-        msg=f"\n學生 {student} 錯誤題目：{error_str}"
+        ws.cell(found_row, 6).value = pass_str  # 第 6 欄 (F 欄)
+        msg=f"\n學生 {student} 錯誤資訊：{error_str} / {pass_str}"
         print(f"{msg}")
         st_info.append(f"{msg}")
     else:
@@ -537,7 +546,7 @@ def write_errors_to_excel(student, wrong_questions):
     wb.save(excel_file)
     return st_info
 #寫入C、D欄(錯誤題數、分數)
-def add_excel(student,error_count,total_score):
+def add_excel(student,error_count,pass_count,total_score):
     """
     參數:學生/總題數/高分題數/基本錯題/基本配分/高分錯題/高分配分
     開啟已存在的 StudentList.xlsx，尋找 A 欄與 student 相同的列，
@@ -565,7 +574,7 @@ def add_excel(student,error_count,total_score):
         ws.cell(found_row, 3).value = error_count
         # D 欄 (column=4) 寫入總分數
         ws.cell(found_row, 4).value = total_score
-        msg=f"已寫入學生: {student} ，錯誤題數 = {error_count}，分數 = {total_score}"
+        msg=f"已寫入學生: {student} ，錯誤題數 = {error_count}，未上傳題數 = {pass_count}，分數 = {total_score}"
         print(f"{msg}")
     else:
         msg=f"未在 Excel 中找到 {student}，無法更新。"
@@ -650,7 +659,11 @@ def main():
 
     if os.path.exists(json_file_path):
         print(f"\n找到json檔案: {json_file_path}")
-        import_json=input("是否讀取json檔案(預設為n): ") or "n"
+        with open(json_file_path, "r", encoding="utf-8") as file:
+            data = json.load(file)  # 讀取並解析JSON檔案
+            print("檔案內容:", data)
+
+        import_json=input("是否讀取json檔案(預設為y): ") or "y"
     else:
         import_json="n"
 
@@ -662,6 +675,7 @@ def main():
                 unzip = data.get("unzip", "y")
                 num_problems = data.get("num_problems", 0)
                 score = data.get("score", [])
+                ctf_count = data.get("ctf_count", "")
                 selection = data.get("selection", "")
             print(f"讀取json檔案成功\nunzip: {unzip}, num_problems: {num_problems}, score: {score}, selection: {selection}")
                 
@@ -690,8 +704,10 @@ def main():
                 print(f"\n總分: {sum(score)}")
                 print(f"score: {score}\n")
                 score_check=input("分數是否正確(預設為y): ")or "y"
-
+        
+        ctf_count = input("是否檢查題目答案檔案(預設為y): ")or "y"
         selection=input("作業編號(eg.02261): ")
+        
 
     print("\n\n--------------- START INSPECION ---------------")
     
@@ -727,7 +743,7 @@ def main():
     #move_non_cpp_folders(hw_dir_path)
     print("\n\n--------------- TESTING ---------------")
 
-    ctf=check_test_files(num_problems)
+    ctf=check_test_files(num_problems,ctf_count)
     if ctf:
         return
 
@@ -749,7 +765,7 @@ def main():
                 num+=1
                 title_info=f"{num}.處理資料夾：{student_name}"
                 print(f"\n\n{title_info}")
-                total_score, results, error_count, wrong_questions,st_info=process_student_folder(item, num_problems,score,base_dir)
+                total_score, results, error_count, pass_count, wrong_questions, pass_questions,st_info=process_student_folder(item, num_problems,score,base_dir)
                 
                 student_info_a.append(title_info)
                 student_info_a.append(st_info)
@@ -757,13 +773,13 @@ def main():
 
                 #print(f"{num}. 學生 {student_name}")
                 #print("wrong_questions: ",wrong_questions)
-                st_info=write_errors_to_excel(student_name, wrong_questions)
+                st_info=write_errors_to_excel(student_name, wrong_questions ,pass_questions)
                 
                 result_str = " ".join(results)
-                line = f"{student_name}----- {result_str} -----共錯 {error_count} 題，得分: {total_score:.2f}"
+                line = f"{student_name}----- {result_str} -----共錯 {error_count} 題，未上傳 {pass_count} 題，得分: {total_score:.2f}"
                 avg_score_a.append(total_score)
                 #學生/錯誤題數/總分
-                msg=add_excel(student_name,error_count,total_score)
+                msg=add_excel(student_name,error_count,pass_count,total_score)
 
                 total_file.write(line)
                 total_file.write("\n")
