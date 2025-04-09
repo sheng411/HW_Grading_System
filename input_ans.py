@@ -72,7 +72,7 @@ def main():
             a_line = result.stdout
             print(a_line)
 
-            anf.write(a_line)
+            anf.write(a_line.strip() + "\n")
             inf.write("\n")
             anf.write("\n")
             #answers.append(a_line)
