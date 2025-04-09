@@ -36,7 +36,8 @@ def create_json_file():
             print(f"\n總分: {sum(score)}")
             print(f"score: {score}\n")
             score_check=input("分數是否正確(預設為y): ")or "y"
-
+    
+    ctf_count = input("是否檢查題目答案檔案(預設為y): ")or "y"
     selection = input("作業編號(eg.02261): ")
 
     # 建立 JSON 結構
@@ -44,6 +45,7 @@ def create_json_file():
         "unzip": unzip,
         "num_problems": num_problems,
         "score": score,
+        "ctf_count": ctf_count,
         "selection": selection
     }
     print(f"\n\n{data}\n\n")
