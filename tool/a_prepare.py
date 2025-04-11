@@ -101,4 +101,5 @@ if __name__ == '__main__':
     output_name = "output123.csv"
     zip_name = "output123.zip"
     pdf_dir_path = os.path.join(base_dir,"0All_pdf")
+    os.makedirs(pdf_dir_path, exist_ok=True)
     run_prepare(base_dir,output_name,zip_name,pdf_dir_path,base_dir)
