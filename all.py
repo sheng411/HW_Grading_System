@@ -809,14 +809,17 @@ def main():
                             student_file.write("\n")
                 pdf_dir_path=txt2pdf(student_name,student_info_path,item,hw_dir_path)
 
+    update_dir_all_path = os.path.join(base_dir, "update_dir_all")
+    os.makedirs(update_dir_all_path, exist_ok=True)
+
     csv_name = f"{selection}.csv"
-    zip_name = f"{selection}.zip"
+    zip_name = f"update_{selection}_pdf.zip"
     if use_zip.lower() == "y":
-        run_prepare(hw_dir_path,csv_name,zip_name,pdf_dir_path)
+        run_prepare(hw_dir_path,csv_name,zip_name,pdf_dir_path,update_dir_all_path)
 
     excelB_path = "B.xlsx"
-    output_csv_path = f"update_score_{selection}.csv"
-    update_excel_and_save_csv(excel_file,excelB_path,output_csv_path)
+    output_csv_path = f"update_{selection}_score.csv"
+    update_excel_and_save_csv(excel_file,excelB_path,output_csv_path,update_dir_all_path)
 
             
     print("\n\n--------------- END INSPECTION ---------------\n")
