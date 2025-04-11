@@ -1,4 +1,5 @@
 from a_txt2pdf import *
+from a_prepare import *
 import os
 import re
 import subprocess
@@ -13,7 +14,7 @@ from openpyxl.utils import get_column_letter
 compile_path = r"C:\msys64\mingw64\bin\g++.exe"
 test_input_file = "tempinput.txt"
 total_file_name = "total.txt"
-error_student_folder = "0Error"
+error_student_folder = "0All_pdf"
 file_extension='.cpp'
 max_retries = 3     # 最多重試次數
 retry_delay = 1     # 每次重試間隔秒數
@@ -677,6 +678,7 @@ def main():
                 score = data.get("score", [])
                 ctf_count = data.get("ctf_count", "")
                 selection = data.get("selection", "")
+                use_zip = data.get("use_zip", "")
             print(f"讀取json檔案成功\nunzip: {unzip}, num_problems: {num_problems}, score: {score}, selection: {selection}")
                 
     else:
@@ -707,6 +709,7 @@ def main():
         
         ctf_count = input("是否檢查題目答案檔案(預設為y): ")or "y"
         selection=input("作業編號(eg.02261): ")
+        use_zip = input("是否將輸出壓縮成 zip (預設為n): ")or "n"
         
 
     print("\n\n--------------- START INSPECION ---------------")
@@ -803,8 +806,12 @@ def main():
                             # 如果 data 為 None，就轉成空字串再寫入
                             student_file.write(str(data) if data is not None else "")
                             student_file.write("\n")
-                txt2pdf(student_name,student_info_path,item,hw_dir_path)
+                pdf_dir_path=txt2pdf(student_name,student_info_path,item,hw_dir_path)
 
+    csv_name = f"{selection}.csv"
+    zip_name = f"{selection}.zip"
+    if use_zip.lower() == "y":
+        run_prepare(hw_dir_path,csv_name,zip_name,pdf_dir_path)
 
             
     print("\n\n--------------- END INSPECTION ---------------\n")
