@@ -1,6 +1,6 @@
-from a_txt2pdf import *
-from a_prepare import *
-from write_score import *
+from tool.a_txt2pdf import *
+from tool.a_prepare import *
+from tool.write_score import *
 import os
 import re
 import subprocess

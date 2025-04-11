@@ -61,6 +61,7 @@ def txt2pdf(student_id, txt_file,item,hw_dir_path):
 
 
     print("PDF OK!")
+    return hw_pdf_dir
 
 
 if __name__ == "__main__":
