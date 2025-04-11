@@ -72,8 +72,9 @@ def process_csv(output_csv,update_dir_path,pdf_dir_path):
                 print(f"找不到檔案：{file_name}")
 
 
-def zip_participant_folders(zip_name,update_dir_path):
-    with zipfile.ZipFile(zip_name, 'w', zipfile.ZIP_DEFLATED) as zipf:
+def zip_participant_folders(zip_name,update_dir_path,update_dir_all_path):
+    update_dir_all_path=os.path.join(update_dir_all_path,zip_name)
+    with zipfile.ZipFile(update_dir_all_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
         for folder in os.listdir(update_dir_path):
             full_folder_path = os.path.join(update_dir_path, folder)
             if os.path.isdir(full_folder_path) and folder.startswith('Participant_'):
@@ -85,15 +86,14 @@ def zip_participant_folders(zip_name,update_dir_path):
     print(f"\n\n*已壓縮完成：{zip_name}*")
 
 
-# 
-def run_prepare(hw_dir_path,file_name,zip_name,pdf_dir_path):
+def run_prepare(hw_dir_path,file_name,zip_name,pdf_dir_path,update_dir_all_path):
     input_csv = find_csv_file()
     clean_csv(input_csv, file_name)
     print(f"結果輸出至：{file_name}\n\n")
     update_dir_path=os.path.join(hw_dir_path,update_dir)
 
     process_csv(file_name,update_dir_path,pdf_dir_path)
-    zip_participant_folders(zip_name,update_dir_path)
+    zip_participant_folders(zip_name,update_dir_path,update_dir_all_path)
 
 
 if __name__ == '__main__':
@@ -101,4 +101,4 @@ if __name__ == '__main__':
     output_name = "output123.csv"
     zip_name = "output123.zip"
     pdf_dir_path = os.path.join(base_dir,"0All_pdf")
-    run_prepare(base_dir,output_name,zip_name,pdf_dir_path)
+    run_prepare(base_dir,output_name,zip_name,pdf_dir_path,base_dir)

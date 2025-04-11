@@ -1,7 +1,9 @@
 from openpyxl import load_workbook
 import csv
+import os
 
-def update_excel_and_save_csv(excelA_path, excelB_path, output_csv_path):
+def update_excel_and_save_csv(excelA_path, excelB_path, output_csv_path,update_dir_all_path):
+    update_dir_all_path = os.path.join(update_dir_all_path, output_csv_path)
     # 載入 ExcelA 和 ExcelB 的工作簿與工作表
     wbA = load_workbook(excelA_path)
     wsA = wbA.active
@@ -16,7 +18,7 @@ def update_excel_and_save_csv(excelA_path, excelB_path, output_csv_path):
         value = row[3].value  # D欄
         mapping[key] = value
         print(f"Mapping: {key} -> {value}")  # Debugging line
-    print(f"Mapping dict: {mapping}")  # Debugging line
+    #print(f"Mapping dict: {mapping}")  # Debugging line
 
     # 更新 ExcelB 的 G欄資料（第7欄）
     for row in wsB.iter_rows(min_row=2, max_col=1):
@@ -31,7 +33,7 @@ def update_excel_and_save_csv(excelA_path, excelB_path, output_csv_path):
             cell.value = 0
 
     # 將更新後的 ExcelB 寫出為 CSV
-    with open(output_csv_path, mode='w', newline='', encoding='utf-8-sig') as f:
+    with open(update_dir_all_path, mode='w', newline='', encoding='utf-8-sig') as f:
         writer = csv.writer(f)
         for row in wsB.iter_rows(values_only=True):
             writer.writerow(row)
@@ -40,7 +42,8 @@ def update_excel_and_save_csv(excelA_path, excelB_path, output_csv_path):
 
 
 if __name__ == '__main__':
+    base_dir = os.getcwd()
     excelA_path = 'Score_03172.xlsx'
     excelB_path = 'testing.xlsx'
     output_csv_path = 'updated_excelB.csv'
-    update_excel_and_save_csv(excelA_path, excelB_path, output_csv_path)
+    update_excel_and_save_csv(excelA_path, excelB_path, output_csv_path,base_dir)
