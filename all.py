@@ -1,5 +1,6 @@
 from a_txt2pdf import *
 from a_prepare import *
+from write_score import *
 import os
 import re
 import subprocess
@@ -812,6 +813,10 @@ def main():
     zip_name = f"{selection}.zip"
     if use_zip.lower() == "y":
         run_prepare(hw_dir_path,csv_name,zip_name,pdf_dir_path)
+
+    excelB_path = "B.xlsx"
+    output_csv_path = f"update_score_{selection}.csv"
+    update_excel_and_save_csv(excel_file,excelB_path,output_csv_path)
 
             
     print("\n\n--------------- END INSPECTION ---------------\n")
