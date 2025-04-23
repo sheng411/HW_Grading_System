@@ -4,14 +4,9 @@ import os
 json_file = "config.json"
 
 def create_json_file():    
-    code_path = input("輸入檔案存放路徑(預設為當前): ").strip() or os.getcwd()
-    code_path = os.path.join(code_path, "test_file")
-    if not os.path.exists(code_path):
-        os.makedirs(code_path)  # 如果路徑不存在，則創建它
-    json_path = os.path.join(code_path, json_file)
-
     # 讓使用者輸入各個欄位的值
-    unzip = input("請輸入 unzip (y/n): ")
+    unzip = input("是否解壓縮(y/n): ") or "y"
+    copy_file2student= input("是否拷貝測試檔案至學生資料夾(預設為y): ") or "y"
     num_problems = int(input("請輸入 num_problems: "))
 
     # 讓使用者輸入 score 陣列
@@ -41,9 +36,19 @@ def create_json_file():
     selection = input("作業編號(eg.02261): ")
     use_zip = input("是否將輸出壓縮成 zip (預設為n): ")or "n"
 
+    return unzip, copy_file2student, num_problems, score, ctf_count, selection, use_zip
+
+def add_json_file(unzip, copy_file2student, num_problems, score, ctf_count, selection, use_zip):
     # 建立 JSON 結構
+    code_path = input("輸入檔案存放路徑[存放於/test_file中](預設為當前): ").strip() or os.getcwd()
+    code_path = os.path.join(code_path, "test_file")
+    if not os.path.exists(code_path):
+        os.makedirs(code_path)  # 如果路徑不存在，則創建它
+    json_path = os.path.join(code_path, json_file)
+
     data = {
         "unzip": unzip,
+        "copy_file2student": copy_file2student,
         "num_problems": num_problems,
         "score": score,
         "ctf_count": ctf_count,
@@ -60,5 +65,6 @@ def create_json_file():
 
 
 if __name__ == "__main__":
-    create_json_file()
+    unzip, copy_file2student, num_problems, score, ctf_count, selection, use_zip=create_json_file()
+    add_json_file(unzip, copy_file2student, num_problems, score, ctf_count, selection, use_zip)
     input("執行完畢，請按 Enter 鍵退出...")
