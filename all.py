@@ -1,6 +1,8 @@
 from tool.a_txt2pdf import *
 from tool.a_prepare import *
 from tool.write_score import *
+from tool.move_use_file import *
+from tool.a_input_json import create_json_file
 import os
 import re
 import subprocess
@@ -288,9 +290,9 @@ def process_student_folder(folder, num_programs,score,base_dir):
 
         # 編譯程式，將執行檔命名為「i」(不含副檔名)
         exe_path = os.path.join(folder, f"{i}")
-        #compile_cmd = ["g++", cpp_path, "-o", exe_path]
-        compile_cmd = [compile_path,"-o", exe_path,cpp_path]
-        #compile_cmd = [compile_path, cpp_path, "-o", exe_path]
+
+        compile_cmd = [compile_path, cpp_path, "-o", exe_path]
+        #compile_cmd = [compile_path, cpp_path, "main.cpp", "-o", exe_path]
 
 
         result = subprocess.run(compile_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -675,6 +677,7 @@ def main():
             with open(json_file_path, "r") as f:
                 data = json.load(f)
                 unzip = data.get("unzip", "y")
+                copy_file2student = data.get("copy_file2student", "y")
                 num_problems = data.get("num_problems", 0)
                 score = data.get("score", [])
                 ctf_count = data.get("ctf_count", "")
@@ -683,34 +686,7 @@ def main():
             print(f"讀取json檔案成功\nunzip: {unzip}, num_problems: {num_problems}, score: {score}, selection: {selection}")
                 
     else:
-        # 詢問使用者本次要執行幾個程式
-        unzip= input("是否解壓縮檔案(預設為y): ") or "y"
-        try:
-            num_problems = int(input("檢測程式數量? "))
-        except ValueError:
-            print("請輸入有效的整數。")
-            return
-        
-        for i in range(num_problems):
-            score.append(int(input(f"第 {i+1} 題配分: ")))
-        print(f"\n總分: {sum(score)}")
-        print(f"score: {score}\n")
-
-        score_check=input("分數是否正確(預設為y): ")or "y"
-        while score_check.lower() == "n":
-            if score_check.lower() == "n":
-                score_check_count=int(input("請重新輸入第幾題: "))
-                if score_check_count>num_problems or score_check_count<=0:
-                    print(f"\n請輸入正確的題號!\n")
-                    continue
-                score[score_check_count-1]=int(input(f"第 {score_check_count} 題配分: "))
-                print(f"\n總分: {sum(score)}")
-                print(f"score: {score}\n")
-                score_check=input("分數是否正確(預設為y): ")or "y"
-        
-        ctf_count = input("是否檢查題目答案檔案(預設為y): ")or "y"
-        selection=input("作業編號(eg.02261): ")
-        use_zip = input("是否將輸出壓縮成 zip (預設為n): ")or "n"
+        unzip, copy_file2student, num_problems, score, ctf_count, selection, use_zip = create_json_file()
         
 
     print("\n\n--------------- START INSPECION ---------------")
@@ -722,6 +698,9 @@ def main():
     #解壓縮
     if unzip.lower() == "y":
         unzip_file(os.getcwd())
+
+    if copy_file2student.lower() == "y":
+        copy_header_files_to_students(base_dir)
 
     #檢查是否有Excel檔案
     excel_file = f"Score_{selection}.xlsx"
@@ -812,12 +791,12 @@ def main():
     update_dir_all_path = os.path.join(base_dir, "update_dir_all")
     os.makedirs(update_dir_all_path, exist_ok=True)
 
-    csv_name = f"{selection}.csv"
+    csv_name = f"{selection}_clean.csv"
     zip_name = f"update_{selection}_pdf.zip"
     if use_zip.lower() == "y":
         run_prepare(hw_dir_path,csv_name,zip_name,pdf_dir_path,update_dir_all_path)
 
-    excelB_path = "B.xlsx"
+    excelB_path = f"{selection}.xlsx"
     output_csv_path = f"update_{selection}_score.csv"
     update_excel_and_save_csv(excel_file,excelB_path,output_csv_path,update_dir_all_path)
 
