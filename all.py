@@ -248,7 +248,7 @@ def check_test_files(num_programs,ctf_count):
 def read_blocks(file_path):
     blocks = []
     current_block = []
-    with open(file_path, "r") as f:
+    with open(file_path, "r", encoding="utf-8") as f:
         for line in f:
             line = line.rstrip("\n")
             if line.strip() == "":
@@ -261,7 +261,7 @@ def read_blocks(file_path):
             blocks.append(current_block)
     return blocks
 #compile and test
-def process_student_folder(folder, num_programs,score,base_dir):
+def process_student_folder(folder, num_programs,score,base_dir, cpp_file2_name):
     st_info = []
     msg = ""
     total_score = 0
@@ -273,6 +273,9 @@ def process_student_folder(folder, num_programs,score,base_dir):
     for i in range(1, num_programs + 1):
         cpp_filename = f"{i}.cpp"
         cpp_path = os.path.join(folder, cpp_filename)
+        if cpp_file2_name != "":
+            cpp_path1 = os.path.join(folder, cpp_file2_name)
+        
         test_file_path = os.path.join(base_dir, test_file_dir)
 
         msg="\n------------------------------------------"
@@ -291,11 +294,13 @@ def process_student_folder(folder, num_programs,score,base_dir):
         # 編譯程式，將執行檔命名為「i」(不含副檔名)
         exe_path = os.path.join(folder, f"{i}")
 
-        compile_cmd = [compile_path, cpp_path, "-o", exe_path]
-        #compile_cmd = [compile_path, cpp_path, "main.cpp", "-o", exe_path]
+        if cpp_file2_name != "":
+            compile_cmd = [compile_path, cpp_path, cpp_path1, "-o", exe_path]
+        else:
+            compile_cmd = [compile_path, cpp_path, "-o", exe_path]
 
 
-        result = subprocess.run(compile_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        result = subprocess.run(compile_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding="utf-8")
         if result.returncode != 0:
             msg=f"編譯 {os.path.basename(cpp_path)} 時發生錯誤: {result.stderr}"
             print(f"{msg}")
@@ -677,11 +682,13 @@ def main():
             with open(json_file_path, "r") as f:
                 data = json.load(f)
                 unzip = data.get("unzip", "y")
-                copy_file2student = data.get("copy_file2student", "y")
+                copy_file2student = data.get("copy_file2student", "n")
+                file_extension = data.get("file_extension", ".cpp")
                 num_problems = data.get("num_problems", 0)
                 score = data.get("score", [])
                 ctf_count = data.get("ctf_count", "")
                 selection = data.get("selection", "")
+                cpp_file2_name = data.get("cpp_file2_name", "")
                 use_zip = data.get("use_zip", "")
             print(f"讀取json檔案成功\nunzip: {unzip}, num_problems: {num_problems}, score: {score}, selection: {selection}")
                 
@@ -700,7 +707,7 @@ def main():
         unzip_file(os.getcwd())
 
     if copy_file2student.lower() == "y":
-        copy_header_files_to_students(base_dir)
+        copy_header_files_to_students(base_dir,file_extension)
 
     #檢查是否有Excel檔案
     excel_file = f"Score_{selection}.xlsx"
@@ -748,7 +755,7 @@ def main():
                 num+=1
                 title_info=f"{num}.處理資料夾：{student_name}"
                 print(f"\n\n{title_info}")
-                total_score, results, error_count, pass_count, wrong_questions, pass_questions,st_info=process_student_folder(item, num_problems,score,base_dir)
+                total_score, results, error_count, pass_count, wrong_questions, pass_questions,st_info=process_student_folder(item, num_problems,score,base_dir, cpp_file2_name)
                 
                 student_info_a.append(title_info)
                 student_info_a.append(st_info)
