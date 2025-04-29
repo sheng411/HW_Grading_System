@@ -8,6 +8,7 @@ def main():
     num_tests = int(input("測資數量(預設為10): ")or 10)
     param_count_str = int(input("測試資料行數(預設為1): ")or 1)
     code_path = input("輸入測試程式路徑(預設為當前): ").strip() or os.getcwd()
+    code_count = int(input("編譯程式數量(預設為1): ")or 1)
 
     path_check = input("測試程式路徑是否和檔案存放路徑相同?(預設為y): ") or "y"
     if path_check.lower() == "y":
@@ -31,14 +32,19 @@ def main():
     input_filename = f"{problem}input.txt"
     ans_filename = f"{problem}ans.txt"
     cpp_filename = f"{problem}.cpp"
+    cpp_filename2 = f"main{problem}.cpp"
     exe_filename = f"{problem}"
 
     input_path = os.path.join(file_path, input_filename)
     ans_path = os.path.join(file_path, ans_filename)
     cpp_path = os.path.join(code_path, cpp_filename)
+    code2_path = os.path.join(code_path, cpp_filename2)
     exe_path = os.path.join(code_path, exe_filename)
 
-    compile_cmd = [compile_path,"-o", exe_path,cpp_path]
+    if code_count > 1:
+        compile_cmd = [compile_path, cpp_path, code2_path,"-o", exe_path]
+    else:
+        compile_cmd = [compile_path, cpp_path, "-o", exe_path]
     result = subprocess.run(compile_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     if result.returncode != 0:
         print(f"\n編譯 {os.path.basename(cpp_path)} 時發生錯誤: {result.stderr}")
