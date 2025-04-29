@@ -5,14 +5,18 @@ json_file = "config.json"
 
 def create_json_file():    
     # 讓使用者輸入各個欄位的值
-    unzip = input("是否解壓縮(y/n): ") or "y"
+    unzip = input("是否解壓縮(預設為y): ") or "y"
     copy_file2student= input("是否拷貝測試檔案至學生資料夾(預設為n): ") or "n"
-    file_extension = input("請輸入檔案副檔名(eg. .cpp): ")
-    num_problems = int(input("請輸入 num_problems: "))
+    file_extension_count = int(input("有幾種副檔名需要帶入(eg. 1): "))
+    file_extension = []
+    for i in range(file_extension_count):
+        file_extension.append(input("請輸入檔案副檔名(eg. .cpp): "))
+    
+    num_problems = int(input("請輸入檢測題目數量: "))
 
     # 讓使用者輸入 score 陣列
     score = []
-    print("請輸入 score，每次輸入一個數字")
+    print("請輸入 score, 每次輸入一個數字")
 
     for i in range(num_problems):
         #print(f"第 {i + 1} 題: ")
@@ -33,9 +37,9 @@ def create_json_file():
             print(f"score: {score}\n")
             score_check=input("分數是否正確(預設為y): ")or "y"
     
-    cpp_file_two = input("是否有兩個 cpp 檔案(預設為n): ") or "n"
+    cpp_file_two = input("是否有兩個.cpp檔案需要編譯(預設為n): ") or "n"
     if cpp_file_two.lower() == "y":
-        cpp_file2_name = input("請輸入第二個 cpp 檔案名稱(eg. main.cpp): ")
+        cpp_file2_name = input("請輸入第二個 .cpp 檔案名稱(eg. main.cpp): ")
     else:
         cpp_file2_name = ""    
     ctf_count = input("是否檢查題目答案檔案(預設為y): ")or "y"
