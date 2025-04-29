@@ -2,9 +2,9 @@ import os
 import shutil
 
 
-file_extension='.cpp'
+#file_extension='.cpp'
 
-def copy_header_files_to_students(base_dir):
+def copy_header_files_to_students(base_dir,file_extensions):
     """
     將 test_file 資料夾內的所有 .h 檔案，複製到 HW_folder 中每個學生的資料夾裡。
     
@@ -14,7 +14,7 @@ def copy_header_files_to_students(base_dir):
     hw_folder_path = os.path.join(base_dir, "HW_folder")
 
     # 取得 test_file 中所有 .h 檔案
-    h_files = [f for f in os.listdir(test_file_path) if f.endswith(file_extension)]
+    h_files = [f for f in os.listdir(test_file_path) if f.endswith(tuple(file_extensions))]
 
     # 確保找到學生的資料夾
     if not os.path.exists(hw_folder_path):
@@ -32,4 +32,4 @@ def copy_header_files_to_students(base_dir):
             shutil.copy2(src, dst)  # 使用 copy2 保留檔案的 metadata
             print(f"已複製 {h_file} 到 {student_path}")
 
-    print(f"所有 {file_extension} 檔案皆已複製完成。")
+    print(f"所有 {file_extensions} 檔案皆已複製完成。")

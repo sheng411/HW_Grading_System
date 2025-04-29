@@ -273,12 +273,14 @@ def process_student_folder(folder, num_programs,score,base_dir, cpp_file2_name):
     for i in range(1, num_programs + 1):
         cpp_filename = f"{i}.cpp"
         cpp_path = os.path.join(folder, cpp_filename)
+
+        cpp_main_file = f"main{i}.cpp"
         if cpp_file2_name != "":
-            cpp_path1 = os.path.join(folder, cpp_file2_name)
+            cpp_path1 = os.path.join(folder, cpp_main_file)
         
         test_file_path = os.path.join(base_dir, test_file_dir)
 
-        msg="\n------------------------------------------"
+        msg="\n"+"="*40
         print(f"{msg}")
         st_info.append(f"{msg}")
 
@@ -518,7 +520,9 @@ def write_errors_to_excel(student, wrong_questions, pass_questions):
 
     if not wrong_questions and not pass_questions:
         # 全對就不寫任何東西
-        return
+        line_msg="\n"+"="*20+"Score infomation"+"="*20
+        st_info.append(f"{line_msg}")
+        return st_info
 
     if not os.path.exists(excel_file):
         print(f"Excel 檔 {excel_file} 不存在，無法更新。")
@@ -544,12 +548,18 @@ def write_errors_to_excel(student, wrong_questions, pass_questions):
             pass_str = "第 " + ",".join(str(q) for q in pass_questions) + " 題無法找到檔案."
         ws.cell(found_row, 5).value = error_str  # 第 5 欄 (E 欄)
         ws.cell(found_row, 6).value = pass_str  # 第 6 欄 (F 欄)
-        msg=f"\n學生 {student} 錯誤資訊：{error_str} / {pass_str}"
+        line_msg="\n"+"="*20+"Score infomation"+"="*20
+        msg=f"\n學生: {student} 錯誤資訊：{error_str} / {pass_str}"
+        print(f"{line_msg}")
         print(f"{msg}")
+        st_info.append(f"{line_msg}")
         st_info.append(f"{msg}")
     else:
+        line_msg="\n"+"="*20+"Score infomation"+"="*20
         msg=f"未在 Excel 中找到 {student}，無法寫入錯題資訊。"
+        print(f"{line_msg}")
         print(f"{msg}")
+        st_info.append(f"{line_msg}")
         st_info.append(f"{msg}")
 
     wb.save(excel_file)
@@ -583,7 +593,7 @@ def add_excel(student,error_count,pass_count,total_score):
         ws.cell(found_row, 3).value = error_count
         # D 欄 (column=4) 寫入總分數
         ws.cell(found_row, 4).value = total_score
-        msg=f"已寫入學生: {student} ，錯誤題數 = {error_count}，未上傳題數 = {pass_count}，分數 = {total_score}"
+        msg=f"學生: {student} ，錯誤題數 = {error_count}，未上傳題數 = {pass_count}，分數 = {total_score}"
         print(f"{msg}")
     else:
         msg=f"未在 Excel 中找到 {student}，無法更新。"
@@ -683,7 +693,7 @@ def main():
                 data = json.load(f)
                 unzip = data.get("unzip", "y")
                 copy_file2student = data.get("copy_file2student", "n")
-                file_extension = data.get("file_extension", ".cpp")
+                file_extensions = data.get("file_extension", "")
                 num_problems = data.get("num_problems", 0)
                 score = data.get("score", [])
                 ctf_count = data.get("ctf_count", "")
@@ -693,10 +703,10 @@ def main():
             print(f"讀取json檔案成功\nunzip: {unzip}, num_problems: {num_problems}, score: {score}, selection: {selection}")
                 
     else:
-        unzip, copy_file2student, num_problems, score, ctf_count, selection, use_zip = create_json_file()
+        unzip, copy_file2student, num_problems, score, ctf_count, selection, cpp_file2_name, use_zip = create_json_file()
         
 
-    print("\n\n--------------- START INSPECION ---------------")
+    print("\n\n "+"="*40 +" START INSPECION "+"="*40)
     
     now = datetime.now()
     start_time = now.strftime("%Y/%m/%d %H:%M:%S")
@@ -707,7 +717,7 @@ def main():
         unzip_file(os.getcwd())
 
     if copy_file2student.lower() == "y":
-        copy_header_files_to_students(base_dir,file_extension)
+        copy_header_files_to_students(base_dir,file_extensions)
 
     #檢查是否有Excel檔案
     excel_file = f"Score_{selection}.xlsx"
@@ -727,11 +737,11 @@ def main():
     #重新命名學生資料夾並寫入Excel
     student_folder_name_excel(hw_dir_path,check_excel)
 
-    print("\n\n--------------- CHECK .cpp FILE ---------------")
+    print("\n\n "+"="*40 +" CHECK .cpp FILE "+"="*40)
 
     #check non cpp files
     #move_non_cpp_folders(hw_dir_path)
-    print("\n\n--------------- TESTING ---------------")
+    print("\n\n "+"="*40 +" TESTING "+"="*40)
 
     ctf=check_test_files(num_problems,ctf_count)
     if ctf:
@@ -808,7 +818,7 @@ def main():
     update_excel_and_save_csv(excel_file,excelB_path,output_csv_path,update_dir_all_path)
 
             
-    print("\n\n--------------- END INSPECTION ---------------\n")
+    print("\n\n "+"="*40 +" END INSPECTION "+"="*40)
     
  
     #設定Excel格式
