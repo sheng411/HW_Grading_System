@@ -37,18 +37,21 @@ def create_json_file():
             print(f"score: {score}\n")
             score_check=input("分數是否正確(預設為y): ")or "y"
     
-    cpp_file_two = input("是否有兩個.cpp檔案需要編譯(預設為n): ") or "n"
+    cpp_file_two = input("是否有兩個以上.cpp檔案需要編譯(預設為n): ") or "n"
+    cpp_file_other_name = []
     if cpp_file_two.lower() == "y":
-        cpp_file2_name = input("請輸入第二個 .cpp 檔案名稱(eg. main.cpp): ")
+        cfn_count = int(input("請輸入有幾個 .cpp 檔案需要編譯(eg. 2): "))
+        for i in range(cfn_count):
+            cpp_file_other_name.append(input(f"[{i+1}/{cfn_count}] 請輸入其他 .cpp 檔案名稱(eg. main1.cpp，僅輸入 mian 即可): "))
     else:
-        cpp_file2_name = ""    
+        pass
     ctf_count = input("是否檢查題目答案檔案(預設為y): ")or "y"
     selection = input("作業編號(eg.02261): ")
     use_zip = input("是否將輸出壓縮成 zip (預設為n): ")or "n"
 
-    return unzip, copy_file2student, file_extension, num_problems, score, ctf_count, selection, cpp_file2_name, use_zip
+    return unzip, copy_file2student, file_extension, num_problems, score, ctf_count, selection, cpp_file_other_name, use_zip
 
-def add_json_file(unzip, copy_file2student, file_extension, num_problems, score, ctf_count, selection, cpp_file2_name, use_zip):
+def add_json_file(unzip, copy_file2student, file_extension, num_problems, score, ctf_count, selection, cpp_file_other_name, use_zip):
     # 建立 JSON 結構
     code_path = input("輸入檔案存放路徑[存放於/test_file中](預設為當前): ").strip() or os.getcwd()
     code_path = os.path.join(code_path, "test_file")
@@ -64,7 +67,7 @@ def add_json_file(unzip, copy_file2student, file_extension, num_problems, score,
         "score": score,
         "ctf_count": ctf_count,
         "selection": selection,
-        "cpp_file2_name": cpp_file2_name,
+        "cpp_file_other_name": cpp_file_other_name,
         "use_zip": use_zip
     }
     print(f"\n\n{data}\n\n")
@@ -77,6 +80,6 @@ def add_json_file(unzip, copy_file2student, file_extension, num_problems, score,
 
 
 if __name__ == "__main__":
-    unzip, copy_file2student, file_extension, num_problems, score, ctf_count, selection, cpp_file2_name, use_zip=create_json_file()
-    add_json_file(unzip, copy_file2student, file_extension, num_problems, score, ctf_count, selection, cpp_file2_name, use_zip)
+    unzip, copy_file2student, file_extension, num_problems, score, ctf_count, selection, cpp_file_other_name, use_zip=create_json_file()
+    add_json_file(unzip, copy_file2student, file_extension, num_problems, score, ctf_count, selection, cpp_file_other_name, use_zip)
     input("執行完畢，請按 Enter 鍵退出...")
