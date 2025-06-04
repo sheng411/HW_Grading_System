@@ -248,18 +248,44 @@ def check_test_files(num_programs,ctf_count):
 def read_blocks(file_path):
     blocks = []
     current_block = []
+    answer_alternatives = []
+    
     with open(file_path, "r", encoding="utf-8") as f:
         for line in f:
             line = line.rstrip("\n")
+            
+            # 如果遇到空行，將當前區塊添加到列表中並重置
             if line.strip() == "":
                 if current_block:
-                    blocks.append(current_block)
+                    # 如果已有替代答案，添加當前區塊作為最後一個替代答案
+                    if answer_alternatives:
+                        answer_alternatives.append(current_block)
+                        blocks.append(answer_alternatives)
+                        answer_alternatives = []
+                    else:
+                        blocks.append(current_block)
+                    current_block = []
+            # 如果遇到換行符號 @@or@@，將當前區塊添加到替代答案中並重置當前區塊
+            elif line.strip() == "@@or@@":
+                if current_block:
+                    if not answer_alternatives:
+                        answer_alternatives = [current_block]
+                    else:
+                        answer_alternatives.append(current_block)
                     current_block = []
             else:
                 current_block.append(line)
-        if current_block:
+    
+    # 處理文件結尾的最後一個區塊
+    if current_block:
+        if answer_alternatives:
+            answer_alternatives.append(current_block)
+            blocks.append(answer_alternatives)
+        else:
             blocks.append(current_block)
+    
     return blocks
+
 #compile and test
 def process_student_folder(folder, num_programs,score,base_dir, cpp_file2_name):
     st_info = []
@@ -409,19 +435,44 @@ def process_student_folder(folder, num_programs,score,base_dir, cpp_file2_name):
                 print(f"{msg}")
                 st_info.append(f"{msg}")
             
-
-            #學生輸出和標準答案比對
+            #print(f"ans_blocks: {ans_blocks}")
+            # 學生輸出和標準答案比對
             if idx < len(ans_blocks):
-                expected = "\n".join(ans_blocks[idx]) + "\n"
-                if output.strip() == expected.strip():
-                    msg=f"測資 {idx+1} 正確"
-                    print(f"{msg}")
-                    st_info.append(f"{msg}")
-                    ans_check += 1
+                # 檢查 ans_blocks[idx] 是否為多個答案選項
+                if isinstance(ans_blocks[idx], list) and isinstance(ans_blocks[idx][0], list):
+                    # 多個答案選項的情況
+                    correct = False
+                    expected_outputs = []
+                    
+                    for ans_option in ans_blocks[idx]:
+                        expected = "\n".join(ans_option) + "\n"
+                        expected_outputs.append(expected)
+                        
+                        if output.strip() == expected.strip():
+                            correct = True
+                            break
+                    
+                    if correct:
+                        msg=f"測資 {idx+1} 正確"
+                        print(f"{msg}")
+                        st_info.append(f"{msg}")
+                        ans_check += 1
+                    else:
+                        msg=f"測資 {idx+1} 錯誤\n預期輸出之一:\n{expected_outputs[0]}\n實際輸出:\n{output}"
+                        print(f"{msg}")
+                        st_info.append(f"{msg}")
                 else:
-                    msg=f"測資 {idx+1} 錯誤\n預期輸出:\n{expected}\n實際輸出:\n{output}"
-                    print(f"{msg}")
-                    st_info.append(f"{msg}")
+                    # 單一答案的情況
+                    expected = "\n".join(ans_blocks[idx]) + "\n"
+                    if output.strip() == expected.strip():
+                        msg=f"測資 {idx+1} 正確"
+                        print(f"{msg}")
+                        st_info.append(f"{msg}")
+                        ans_check += 1
+                    else:
+                        msg=f"測資 {idx+1} 錯誤\n預期輸出:\n{expected}\n實際輸出:\n{output}"
+                        print(f"{msg}")
+                        st_info.append(f"{msg}")
             else:
                 msg=f"沒有找到測試案例 {idx+1} 的標準答案。"
                 print(f"{msg}")
@@ -700,8 +751,9 @@ def main():
                 selection = data.get("selection", "")
                 cpp_file2_name = data.get("cpp_file2_name", "")
                 use_zip = data.get("use_zip", "")
-            print(f"讀取json檔案成功\nunzip: {unzip}, num_problems: {num_problems}, score: {score}, selection: {selection}")
-                
+            print(f"讀取json檔案成功")
+            print(f"是否解壓縮: {unzip}\n是否複製檔案: {copy_file2student}\n檔案副檔名: {file_extensions}\n題數: {num_problems}\n分數: {score}\n是否檢查題目答案檔案: {ctf_count}\n作業編號: {selection}\n第二個 .cpp 檔案名稱: {cpp_file2_name}\n是否壓縮: {use_zip}")
+
     else:
         unzip, copy_file2student, num_problems, score, ctf_count, selection, cpp_file2_name, use_zip = create_json_file()
         
