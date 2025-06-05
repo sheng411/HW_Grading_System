@@ -903,6 +903,15 @@ def main():
         total_file.write(f"{end_t}\n")
     total_file.close()
 
+    # 清理緩存檔
+    if os.path.exists(test_input_file):
+        try:
+            os.remove(csv_name)
+            os.remove(test_input_file)
+            print(f"已刪除緩存檔: {test_input_file}, {csv_name}")
+        except Exception as e:
+            print(f"無法刪除緩存檔 {test_input_file}: {e}")
+
     print(f"\n\n{execuition_time}")
     print(f"{average_time}\n")
     print(f"{start_t}")
