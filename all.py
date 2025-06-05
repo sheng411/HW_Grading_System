@@ -287,7 +287,7 @@ def read_blocks(file_path):
     return blocks
 
 #compile and test
-def process_student_folder(folder, num_programs,score,base_dir, cpp_file2_name):
+def process_student_folder(folder, num_programs,score,base_dir, cpp_file_other_name):
     st_info = []
     msg = ""
     total_score = 0
@@ -299,10 +299,6 @@ def process_student_folder(folder, num_programs,score,base_dir, cpp_file2_name):
     for i in range(1, num_programs + 1):
         cpp_filename = f"{i}.cpp"
         cpp_path = os.path.join(folder, cpp_filename)
-
-        cpp_main_file = f"main{i}.cpp"
-        if cpp_file2_name != "":
-            cpp_path1 = os.path.join(folder, cpp_main_file)
         
         test_file_path = os.path.join(base_dir, test_file_dir)
 
@@ -310,7 +306,16 @@ def process_student_folder(folder, num_programs,score,base_dir, cpp_file2_name):
         print(f"{msg}")
         st_info.append(f"{msg}")
 
-        if not os.path.isfile(cpp_path):
+        # 編譯程式，將執行檔命名為 "i"(不含副檔名)
+        exe_path = os.path.join(folder, f"{i}")
+
+        # 初始化編譯命令列表
+        compile_cmd = [compile_path]
+
+        # 學生的 .cpp 檔（如 1.cpp）
+        if os.path.isfile(cpp_path):
+            compile_cmd.append(cpp_path)
+        else:
             msg = f"*找不到 {cpp_filename},Pass {i}"
             print(f"{msg}")
             st_info.append(f"{msg}")
@@ -318,15 +323,17 @@ def process_student_folder(folder, num_programs,score,base_dir, cpp_file2_name):
             pass_count += 1
             pass_questions.append(i)
             continue
-
-        # 編譯程式，將執行檔命名為「i」(不含副檔名)
-        exe_path = os.path.join(folder, f"{i}")
-
-        if cpp_file2_name != "":
-            compile_cmd = [compile_path, cpp_path, cpp_path1, "-o", exe_path]
-        else:
-            compile_cmd = [compile_path, cpp_path, "-o", exe_path]
-
+        
+        # 其他 .cpp 檔案
+        if cpp_file_other_name:    
+            for ocf in cpp_file_other_name:
+                o_cpp_filename = f"{ocf}{i}.cpp"
+                o_cpp_path = os.path.join(folder, o_cpp_filename)
+                if os.path.isfile(o_cpp_path):
+                    compile_cmd.append(o_cpp_path)
+                
+        # 添加輸出選項
+        compile_cmd.extend(["-o", exe_path])
 
         result = subprocess.run(compile_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding="utf-8")
         if result.returncode != 0:
@@ -749,13 +756,13 @@ def main():
                 score = data.get("score", [])
                 ctf_count = data.get("ctf_count", "")
                 selection = data.get("selection", "")
-                cpp_file2_name = data.get("cpp_file2_name", "")
+                cpp_file_other_name = data.get("cpp_file_other_name", [])
                 use_zip = data.get("use_zip", "")
             print(f"讀取json檔案成功")
-            print(f"是否解壓縮: {unzip}\n是否複製檔案: {copy_file2student}\n檔案副檔名: {file_extensions}\n題數: {num_problems}\n分數: {score}\n是否檢查題目答案檔案: {ctf_count}\n作業編號: {selection}\n第二個 .cpp 檔案名稱: {cpp_file2_name}\n是否壓縮: {use_zip}")
+            print(f"是否解壓縮: {unzip}\n是否複製檔案: {copy_file2student}\n檔案副檔名: {file_extensions}\n題數: {num_problems}\n分數: {score}\n是否檢查題目答案檔案: {ctf_count}\n作業編號: {selection}\n第二個 .cpp 檔案名稱: {cpp_file_other_name}\n是否壓縮: {use_zip}")
 
     else:
-        unzip, copy_file2student, num_problems, score, ctf_count, selection, cpp_file2_name, use_zip = create_json_file()
+        unzip, copy_file2student, num_problems, score, ctf_count, selection, cpp_file_other_name, use_zip = create_json_file()
         
 
     print("\n\n "+"="*40 +" START INSPECION "+"="*40)
@@ -817,7 +824,7 @@ def main():
                 num+=1
                 title_info=f"{num}.處理資料夾：{student_name}"
                 print(f"\n\n{title_info}")
-                total_score, results, error_count, pass_count, wrong_questions, pass_questions,st_info=process_student_folder(item, num_problems,score,base_dir, cpp_file2_name)
+                total_score, results, error_count, pass_count, wrong_questions, pass_questions,st_info=process_student_folder(item, num_problems,score,base_dir, cpp_file_other_name)
                 
                 student_info_a.append(title_info)
                 student_info_a.append(st_info)
