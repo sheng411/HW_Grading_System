@@ -84,16 +84,11 @@ def main():
             print(f"\n\n第 {i} 組測試資料: ")
             test_data = ""
             lines = []
-            last_line_empty = False
             
             while True:
                 line = input()
                 if line == "":
-                    if last_line_empty:  # 已經連續輸入了兩個空行
-                        break
-                    last_line_empty = True  # 標記第一個空行
-                else:
-                    last_line_empty = False
+                    break
                     
                 lines.append(line)
             
