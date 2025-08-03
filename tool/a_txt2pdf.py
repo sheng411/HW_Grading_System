@@ -65,6 +65,7 @@ def txt2pdf(student_id, txt_file,item,hw_dir_path):
 
 
 if __name__ == "__main__":
+    base_dir = os.getcwd()
     student_id = "110011"
     txt_file = "total.txt"
-    txt2pdf(student_id, txt_file)
+    txt2pdf(student_id, txt_file,base_dir,base_dir)
