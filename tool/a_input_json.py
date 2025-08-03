@@ -40,9 +40,9 @@ def create_json_file():
     cpp_file_two = input("是否有兩個以上.cpp檔案需要編譯(預設為n): ") or "n"
     cpp_file_other_name = []
     if cpp_file_two.lower() == "y":
-        cfn_count = int(input("請輸入有幾個額外的 .cpp 檔案需要編譯(eg. 2): "))
+        cfn_count = int(input("請輸入每題需要有幾個額外的 .cpp 檔案需要編譯[不含學生.cpp檔案](eg. 2): "))
         for i in range(cfn_count):
-            cpp_file_other_name.append(input(f"[{i+1}/{cfn_count}] 請輸入其他 .cpp 檔案名稱(eg. main1.cpp，僅輸入 mian 即可): "))
+            cpp_file_other_name.append(input(f"[{i+1}/{cfn_count}] 請輸入每題需要的 .cpp 檔案名稱(eg. main1.cpp，僅輸入 main 即可): "))
     else:
         pass
     ctf_count = input("是否檢查題目答案檔案(預設為y): ")or "y"
