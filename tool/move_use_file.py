@@ -13,12 +13,12 @@ def copy_header_files_to_students(base_dir,file_extensions):
     test_file_path = os.path.join(base_dir, "test_file")
     hw_folder_path = os.path.join(base_dir, "HW_folder")
 
-    # 取得 test_file 中所有 .h 檔案
+    # 取得 test_file 中所有需要的檔案
     h_files = [f for f in os.listdir(test_file_path) if f.endswith(tuple(file_extensions))]
 
     # 確保找到學生的資料夾
     if not os.path.exists(hw_folder_path):
-        print(f"找不到 HW_folder：{hw_folder_path}")
+        print(f"找不到 HW_folder: {hw_folder_path}")
         return
 
     student_dirs = [d for d in os.listdir(hw_folder_path)
