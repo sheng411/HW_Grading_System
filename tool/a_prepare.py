@@ -7,7 +7,7 @@ import zipfile
 #預設
 update_dir = "update_zip"
 
-
+# 取得.csv檔案
 def find_csv_file():
     csv_files = [f for f in os.listdir('.') if f.lower().endswith('.csv')]
 
@@ -33,7 +33,7 @@ def find_csv_file():
         except ValueError:
             print("請輸入數字")
 
-
+# 整理成可以使用的.csv檔案
 def clean_csv(input_file: str, output_file: str):
     with open(input_file, newline='', encoding='utf-8-sig') as infile, \
          open(output_file, 'w', newline='', encoding='utf-8-sig') as outfile:
@@ -48,7 +48,7 @@ def clean_csv(input_file: str, output_file: str):
                 row[0] = row[0].replace('參與者', '').strip()
             writer.writerow(row)
 
-
+# 複製檔案到指定資料夾
 def process_csv(output_csv,update_dir_path,pdf_dir_path):
     if not os.path.exists(update_dir_path):
         os.makedirs(update_dir_path)
@@ -71,7 +71,7 @@ def process_csv(output_csv,update_dir_path,pdf_dir_path):
             except FileNotFoundError:
                 print(f"找不到檔案：{file_name}")
 
-
+# 將參與者資料夾壓縮成zip檔案
 def zip_participant_folders(zip_name,update_dir_path,update_dir_all_path):
     update_dir_all_path=os.path.join(update_dir_all_path,zip_name)
     with zipfile.ZipFile(update_dir_all_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
@@ -85,7 +85,7 @@ def zip_participant_folders(zip_name,update_dir_path,update_dir_all_path):
                         zipf.write(full_path, arcname)
     print(f"\n\n*已壓縮完成：{zip_name}*")
 
-
+# 執行程式
 def run_prepare(hw_dir_path,file_name,zip_name,pdf_dir_path,update_dir_all_path):
     input_csv = find_csv_file()
     clean_csv(input_csv, file_name)
