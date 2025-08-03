@@ -43,7 +43,7 @@ def update_excel_and_save_csv(excelA_path, excelB_path, output_csv_path,update_d
 
 if __name__ == '__main__':
     base_dir = os.getcwd()
-    excelA_path = 'Score_03172.xlsx'
-    excelB_path = 'testing.xlsx'
+    excelA_path = input("請輸入學生分數excel檔案名稱(Score_03172.xlsx): ")
+    excelB_path = input("請輸入moodle下載的計分excel名稱(testing.xlsx): ")
     output_csv_path = 'updated_excelB.csv'
     update_excel_and_save_csv(excelA_path, excelB_path, output_csv_path,base_dir)
